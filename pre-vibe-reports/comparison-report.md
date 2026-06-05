@@ -1,16 +1,16 @@
-# pre-vibe Comparison Test Report
+# pre-vibe 对比测试报告
 
-Deterministic offline comparison of raw task prompts versus pre-vibe generated context packages.
+本报告为确定性离线对比：比较原始任务 prompt 与 pre-vibe 生成的上下文包。
 
-| Scenario | Raw tokens | FIRST-PROMPT tokens | Full artifact tokens | Raw readiness | pre-vibe readiness | Landing effect |
+| 场景 | Raw tokens | FIRST-PROMPT tokens | 完整 artifact tokens | Raw readiness | pre-vibe readiness | Landing effect |
 |---|---:|---:|---:|---:|---:|---|
-| general | 12 | 382 | 1184 | 0 | 22 | higher readiness |
-| research | 17 | 452 | 1334 | 2 | 24 | higher readiness |
-| coding | 15 | 446 | 1327 | 2 | 24 | higher readiness |
+| general | 12 | 382 | 1184 | 0 | 22 | readiness 提升 |
+| research | 17 | 452 | 1334 | 2 | 24 | readiness 提升 |
+| coding | 15 | 446 | 1327 | 2 | 24 | readiness 提升 |
 
-## Interpretation
+## 解读
 
-- Raw token cost is lower because no context engineering is performed.
-- pre-vibe stores all three artifacts on disk, but the formal injection is the budgeted FIRST-PROMPT only.
-- Landing effect is measured by a local readiness rubric: goal, assumptions, acceptance criteria, risks, verification, and scenario terms.
-- A live model A/B/C test is still required before claiming real-world task completion improvements.
+- Raw prompt 的前置 token 成本最低，因为没有做上下文工程。
+- pre-vibe 会把三份 artifact 落盘保存，但正式 workflow 默认只注入带预算的 `FIRST-PROMPT.MD`。
+- Landing effect 使用本地 readiness rubric 测量：目标、假设、验收标准、风险、验证和场景关键词。
+- 在宣称真实任务完成效果提升前，仍需要 live model A/B/C 测试。

@@ -1,66 +1,66 @@
-# Reference Project Analysis
+# 参考项目分析
 
-## Scope
+## 范围
 
-Reference repositories were cloned to `/private/tmp/pre-vibe-reference-projects` for local inspection:
+参考仓库已 clone 到 `/private/tmp/pre-vibe-reference-projects` 进行本地分析：
 
 - `linshenkx/prompt-optimizer`
 - `ckelsoe/prompt-architect`
 
-The goal was not to copy their product model, but to identify implementation patterns that can make pre-vibe more usable while preserving its agent-workflow positioning.
+本次分析目标不是复制它们的产品模型，而是识别可让 pre-vibe 更可用的实现模式，同时保留 pre-vibe 面向 agent workflow 的定位。
 
 ## prompt-optimizer
 
-Useful patterns:
+值得借鉴的模式：
 
-- Treat prompt work as an asset lifecycle: optimize, test, compare, save, and reuse.
-- Support multiple entry points: web, desktop, extension, Docker, and MCP.
-- Keep template choices explicit so users can understand what style of optimization they are applying.
-- Provide evaluation and comparison workflows instead of relying only on subjective "looks better" judgment.
+- 将 prompt 工作视为资产生命周期：优化、测试、比较、保存、复用。
+- 支持多入口：web、desktop、extension、Docker 和 MCP。
+- 显式展示 template 选择，让用户知道正在使用哪种优化方式。
+- 提供 evaluation/comparison workflow，而不只依赖“看起来更好”的主观判断。
 
-What pre-vibe should not copy:
+pre-vibe 不应照搬的部分：
 
-- Do not become a generic text-to-text prompt optimizer.
-- Do not default to long optimized prompts when the agent already has local project files.
-- Do not mix generated reports into the plugin source package.
+- 不要变成通用 text-to-text prompt optimizer。
+- 当 agent 已经可以读取本地项目文件时，不要默认生成很长的 optimized prompt。
+- 不要把生成报告混进 plugin 源包体。
 
-Adopted in v0.1.1:
+v0.1.1 已吸收：
 
-- Separate package source and reports.
-- Keep deterministic comparison tests.
-- Treat generated context as reusable disk artifacts, but inject only the compact brief.
+- 分离 package source 和 reports。
+- 保留确定性 comparison tests。
+- 将生成上下文视为可复用落盘 artifacts，但正式只注入 compact brief。
 
 ## prompt-architect
 
-Useful patterns:
+值得借鉴的模式：
 
-- Start with intent routing before choosing a framework.
-- Evaluate quality across clarity, specificity, context, completeness, and structure.
-- Ask targeted clarification questions rather than open-ended brainstorming.
-- Use progressive disclosure: load detailed framework guidance only when needed.
-- End with a clean handoff prompt the user can actually use.
+- 在选择框架前先做 intent routing。
+- 从 clarity、specificity、context、completeness、structure 五个维度评估质量。
+- 提出 targeted clarification questions，而不是开放式 brainstorm。
+- 使用 progressive disclosure：只在需要时加载详细 framework guidance。
+- 输出一个用户真的可以接着使用的 clean handoff prompt。
 
-What pre-vibe should not copy:
+pre-vibe 不应照搬的部分：
 
-- Do not expose 27 generic prompt frameworks as the product core.
-- Do not ask 3-5 questions by default for simple daily tasks.
-- Do not present the full framework scaffold as formal agent context.
+- 不要把 27 个通用 prompt framework 作为产品核心。
+- 不要对简单日常任务默认提出 3-5 个问题。
+- 不要把完整 framework scaffold 当作正式 agent context。
 
-Adopted in v0.1.1:
+v0.1.1 已吸收：
 
-- Added lightweight quality scoring over the same five dimensions.
-- Added scenario-aware intake and budget routing.
-- Added blocking-question logic with a `micro` mode that asks none.
-- Kept skill guidance short and moved details into reference files.
+- 增加同样五个维度的轻量 quality scoring。
+- 增加场景感知的 intake 与 budget routing。
+- 增加 blocking-question 逻辑，并让 `micro` 模式不提问。
+- 保持 skill guidance 短小，把细节移入 reference files。
 
-## Product Implication
+## 产品含义
 
-The right pre-vibe differentiation is:
+pre-vibe 的正确差异化是：
 
 ```text
-prompt optimizer: improve prompt text
-prompt architect: choose and apply prompt frameworks
-pre-vibe: prepare the minimum useful first-turn context for an agent workflow
+prompt optimizer: 改进 prompt 文本
+prompt architect: 选择并应用 prompt framework
+pre-vibe: 为 agent workflow 准备最小必要首轮上下文
 ```
 
-This keeps the section 20 product point intact: pre-vibe is about environment/project/user information gaps in agent workflows, not just prettier prompt prose.
+这保留了 PRD 第 20 条中的产品重点：pre-vibe 解决的是 agent workflow 中的环境、项目和用户需求信息差，而不是单纯让 prompt prose 更漂亮。

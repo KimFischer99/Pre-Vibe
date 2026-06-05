@@ -95,6 +95,37 @@ MODE_ALIASES = {
     "quick": "micro",
 }
 
+REVERSE_TERMS = (
+    "reverse",
+    "reverse-engineer",
+    "decompile",
+    "disassemble",
+    "binary analysis",
+    "逆向",
+    "反编译",
+    "反汇编",
+    "拆包",
+)
+
+AMBIGUOUS_TARGET_TERMS = (
+    "desktop",
+    "on my desktop",
+    "this thing",
+    "this app",
+    "this file",
+    "桌面",
+    "这个东西",
+    "这个应用",
+    "这个app",
+    "这个文件",
+)
+
+TARGET_PATH_RE = re.compile(
+    r"(`[^`]+`|[/~][^\s]+|[A-Za-z]:\\[^\s]+|\b[\w.-]+\."
+    r"(app|exe|dmg|pkg|zip|asar|apk|ipa|bin|dll|dylib|so|jar|class)\b)",
+    re.IGNORECASE,
+)
+
 
 @dataclass
 class ProjectContext:
@@ -145,6 +176,9 @@ class IntakeResult:
     acceptance_criteria: list[str]
     hard_constraints: list[str]
     search_plan: list[str]
+    context_acquisition_plan: list[str]
+    codex_workflow_recommendations: list[str]
+    environment_recommendations: list[str]
     context_completion: list[str]
     tutorial_suggestions: list[str]
     project_context: ProjectContext
@@ -163,6 +197,8 @@ def normalize_mode(mode: str, scenario: str, task: str) -> str:
         return "micro"
     if any(word in lower for word in ("architecture", "architect", "系统设计", "重构", "新项目")):
         return "architect"
+    if is_reverse_engineering_task(task):
+        return "standard"
     if scenario in {"coding", "mixed"} and any(word in lower for word in ("mvp", "plugin", "多文件", "项目", "repo")):
         return "deep"
     return "standard"
@@ -176,6 +212,20 @@ def choose_language(task: str, requested: str) -> str:
     if requested != "auto":
         return requested
     return "zh" if has_cjk(task) else "en"
+
+
+def is_reverse_engineering_task(task: str) -> bool:
+    lower = task.lower()
+    return any(term in lower for term in REVERSE_TERMS)
+
+
+def has_target_path(task: str) -> bool:
+    return bool(TARGET_PATH_RE.search(task))
+
+
+def has_ambiguous_external_target(task: str) -> bool:
+    lower = task.lower()
+    return is_reverse_engineering_task(task) and any(term in lower for term in AMBIGUOUS_TARGET_TERMS) and not has_target_path(task)
 
 
 def classify_task(task: str, requested: str) -> str:
@@ -194,6 +244,9 @@ def classify_task(task: str, requested: str) -> str:
         "deploy",
         "plugin",
         "mvp",
+        "reverse",
+        "decompile",
+        "disassemble",
         "代码",
         "搭建",
         "修复",
@@ -201,6 +254,10 @@ def classify_task(task: str, requested: str) -> str:
         "后端",
         "测试",
         "部署",
+        "逆向",
+        "反编译",
+        "反汇编",
+        "拆包",
     )
     research = (
         "research",
@@ -273,7 +330,7 @@ def find_global_agents() -> Path | None:
     return None
 
 
-def safe_walk(root: Path, max_files: int, scenario: str) -> ProjectContext:
+def safe_walk(root: Path, max_files: int, scenario: str, skip_reason: str = "scan skipped by budget") -> ProjectContext:
     scanned: list[str] = []
     skipped: list[str] = []
     dirs: list[str] = []
@@ -304,7 +361,7 @@ def safe_walk(root: Path, max_files: int, scenario: str) -> ProjectContext:
             [],
             [],
             [],
-            {"scan": "skipped by micro budget"},
+            {"scan": skip_reason},
             [],
             ["secret files", "generated files", "vendor/dependency directories"],
             str(global_agents) if global_agents else None,
@@ -420,6 +477,10 @@ def normalize_goal(task: str, scenario: str, language: str) -> str:
 
 def current_task_for(task: str, scenario: str, language: str) -> str:
     if language in {"zh", "bilingual"}:
+        if has_ambiguous_external_target(task):
+            return "先确认桌面目标对象的绝对路径、文件类型和用户授权；没有目标对象前不要生成执行方案。"
+        if is_reverse_engineering_task(task):
+            return "先确认授权、目标文件类型和分析边界，再读取最少必要元数据并制定逆向分析计划。"
         if scenario == "general":
             return "直接交付用户要的最终文本或操作方案，不做项目扫描。"
         if scenario == "research":
@@ -427,6 +488,10 @@ def current_task_for(task: str, scenario: str, language: str) -> str:
         if scenario == "coding":
             return "先读取少量相关文件并提出计划，再执行最小安全改动。"
         return "先澄清本轮交付物和必要上下文，再进入执行。"
+    if has_ambiguous_external_target(task):
+        return "First confirm the target object's absolute path, file type, and user authorization; do not produce an execution plan before the target is known."
+    if is_reverse_engineering_task(task):
+        return "Confirm authorization, target file type, and analysis boundaries before reading minimal metadata and planning reverse analysis."
     if scenario == "general":
         return "Deliver the requested text or action plan directly without project scanning."
     if scenario == "research":
@@ -436,10 +501,18 @@ def current_task_for(task: str, scenario: str, language: str) -> str:
     return "Clarify the deliverable and minimum useful context before execution."
 
 
-def blocking_questions_for(scenario: str, language: str, budget: BudgetPolicy) -> list[str]:
+def blocking_questions_for(scenario: str, language: str, budget: BudgetPolicy, task: str) -> list[str]:
     if budget.max_questions <= 0:
         return []
     zh = language in {"zh", "bilingual"}
+    priority: list[tuple[str, str]] = []
+    if has_ambiguous_external_target(task):
+        priority.append(
+            (
+                "桌面上的具体目标是什么？请提供绝对路径、文件/应用名、类型，以及你是否有权分析它。",
+                "What exact desktop target should be analyzed? Provide the absolute path, file/app name, type, and whether you are authorized to analyze it.",
+            )
+        )
     bank = {
         "general": [
             ("最终交付格式是否必须是表格、邮件、清单或正式文档？", "Must the final deliverable be a table, email, checklist, or formal document?"),
@@ -461,7 +534,8 @@ def blocking_questions_for(scenario: str, language: str, budget: BudgetPolicy) -
             ("是否涉及不可逆或高风险操作？", "Does the task involve irreversible or high-risk actions?"),
         ],
     }
-    return [q[0] if zh else q[1] for q in bank.get(scenario, bank["general"])[: budget.max_questions]]
+    selected = priority + bank.get(scenario, bank["general"])
+    return [q[0] if zh else q[1] for q in selected[: budget.max_questions]]
 
 
 def assumptions_for(scenario: str, language: str, benchmark_mode: str) -> list[str]:
@@ -492,13 +566,15 @@ def assumptions_for(scenario: str, language: str, benchmark_mode: str) -> list[s
     return assumptions
 
 
-def constraints_for(scenario: str, language: str, benchmark_mode: str) -> list[str]:
+def constraints_for(scenario: str, language: str, benchmark_mode: str, task: str) -> list[str]:
     if language in {"zh", "bilingual"}:
         constraints = [
             "不要把 PRE-VIBE-SPEC.MD 全文复制进正式 workflow。",
             "不要读取 `.env`、私钥、token、数据库 dump 或生产日志。",
             "只问会改变执行路径的 blocking questions。",
         ]
+        if is_reverse_engineering_task(task):
+            constraints.append("只分析用户明确拥有或授权分析的目标；不要绕过 DRM、许可、认证或提取 secrets。")
         if benchmark_mode == "final-answer-only":
             constraints.append("不要写文件；只在最终回答中交付。")
         if scenario == "coding":
@@ -511,6 +587,8 @@ def constraints_for(scenario: str, language: str, benchmark_mode: str) -> list[s
         "Do not read `.env`, private keys, tokens, database dumps, or production logs.",
         "Ask only blocking questions that would change execution.",
     ]
+    if is_reverse_engineering_task(task):
+        constraints.append("Analyze only targets the user owns or is authorized to inspect; do not bypass DRM, licensing, authentication, or extract secrets.")
     if benchmark_mode == "final-answer-only":
         constraints.append("Do not write files; deliver in the final answer only.")
     if scenario == "coding":
@@ -520,13 +598,17 @@ def constraints_for(scenario: str, language: str, benchmark_mode: str) -> list[s
     return constraints
 
 
-def acceptance_for(scenario: str, language: str) -> list[str]:
+def acceptance_for(scenario: str, language: str, task: str) -> list[str]:
     if language in {"zh", "bilingual"}:
         base = [
             "目标、当前任务、硬约束、关键假设和完成标准清楚。",
             "正式执行上下文不包含完整 spec 或长背景。",
             "下一步操作需要用户批准 `/clear` 和注入 FIRST-PROMPT.MD。",
         ]
+        if has_ambiguous_external_target(task):
+            base.append("在缺少桌面目标路径时，输出必须优先要求用户补充目标对象，而不是假装已经有上下文。")
+        elif is_reverse_engineering_task(task):
+            base.append("包含目标文件、授权边界、初步分析步骤和禁止行为。")
         if scenario == "coding":
             base.append("包含少量相关文件指针、禁止触碰区域和验证建议。")
         if scenario == "research":
@@ -537,6 +619,10 @@ def acceptance_for(scenario: str, language: str) -> list[str]:
         "Formal execution context excludes the full spec and long background.",
         "Next step requires user approval for `/clear` and FIRST-PROMPT.MD injection.",
     ]
+    if has_ambiguous_external_target(task):
+        base.append("If the desktop target path is missing, the output must ask for the target instead of pretending context is available.")
+    elif is_reverse_engineering_task(task):
+        base.append("Include target file, authorization boundary, initial analysis steps, and prohibited actions.")
     if scenario == "coding":
         base.append("Include relevant file pointers, do-not-touch areas, and verification hints.")
     if scenario == "research":
@@ -572,6 +658,123 @@ def search_plan_for(scenario: str, language: str, budget: BudgetPolicy) -> list[
             "Prefer official docs; do not default to tutorials.",
         ]
     return ["Search only when current facts would change the final deliverable."]
+
+
+def context_acquisition_for(result_language: str, scenario: str, task: str, ctx: ProjectContext, budget: BudgetPolicy) -> list[str]:
+    zh = result_language in {"zh", "bilingual"}
+    if zh:
+        if has_ambiguous_external_target(task):
+            return [
+                "先向用户确认桌面目标的绝对路径、文件/应用名、文件类型和授权边界。",
+                "在目标路径明确前，不读取当前 repo 作为替代上下文，不生成逆向执行方案。",
+                "拿到路径后只做最小识别：`file`、`ls -lh`、`shasum -a 256`、`codesign -dv`、`otool -hv`、`strings | head`。",
+                "根据识别结果再决定下一步：Mach-O/ELF/PE、PyInstaller/Electron/原生二进制、是否需要解包工具。",
+            ]
+        items = [
+            "先处理 Blocking Questions；只有答案会改变执行路径时才追问。",
+            "读取 Context Index 中列出的文件/目录，不要为了“理解项目”扫全仓库。",
+        ]
+        if scenario == "research":
+            items.append(f"按 source map 检索最多 {budget.max_fetches} 个一手/官方来源，并记录来源用途。")
+        if scenario in {"coding", "mixed"}:
+            items.append("先读最少相关文件，形成 plan，再执行最小安全改动并验证。")
+        if ctx.skipped_secret_like:
+            items.append("secret-like 文件已跳过；除非用户明确授权且确有必要，否则不读取。")
+        return items
+    if has_ambiguous_external_target(task):
+        return [
+            "First ask for the desktop target's absolute path, file/app name, file type, and authorization boundary.",
+            "Do not use the current repo as substitute context or produce a reverse-analysis execution plan until the target path is known.",
+            "After the path is known, perform minimal identification only: `file`, `ls -lh`, `shasum -a 256`, `codesign -dv`, `otool -hv`, `strings | head`.",
+            "Use those signals to decide the next path: Mach-O/ELF/PE, PyInstaller/Electron/native binary, and whether extraction tools are needed.",
+        ]
+    items = [
+        "Resolve Blocking Questions first; ask only when the answer would change execution.",
+        "Read only files/directories listed in the Context Index; do not scan the whole repo just to understand it.",
+    ]
+    if scenario == "research":
+        items.append(f"Use the source map to inspect at most {budget.max_fetches} official/primary sources and record each source's purpose.")
+    if scenario in {"coding", "mixed"}:
+        items.append("Read the smallest relevant file set, plan, then make the smallest safe change and verify it.")
+    if ctx.skipped_secret_like:
+        items.append("Secret-like files were skipped; do not read them unless the user explicitly authorizes it and the task requires it.")
+    return items
+
+
+def codex_workflow_for(result_language: str, scenario: str, task: str, budget: BudgetPolicy) -> list[str]:
+    zh = result_language in {"zh", "bilingual"}
+    if zh:
+        items = [
+            "首轮 prompt 按 Codex 推荐结构保留 Goal、Context、Constraints、Done when。",
+            "复杂或模糊任务先使用 plan-first 工作流；必要时让 agent 先采访用户再执行。",
+            "长期规则放入 `AGENTS.md`；一次性任务细节保留在本 handbook 和 `FIRST-PROMPT.MD`。",
+            "通过 `~/.codex/config.toml` 或项目 `.codex/config.toml` 固化模型、reasoning、sandbox、approval、MCP 等偏好。",
+            "执行后要求 agent 测试、检查并 review 结果，而不是只交付代码或分析结论。",
+        ]
+        if budget.name in {"deep", "architect"}:
+            items.append("长任务建议使用 Goal mode；如果 `/goal` 不可用，在 `config.toml` 中启用 `[features] goals = true`。")
+        if scenario == "research":
+            items.append("外部资料优先通过 MCP/官方来源读取，避免把长引用摘要一次性塞进 prompt。")
+        if is_reverse_engineering_task(task):
+            items.append("逆向任务建议保持本地线程和严格 approval；每一步工具调用前先说明目的与风险。")
+        return items
+    items = [
+        "Keep Goal, Context, Constraints, and Done when in the first prompt, matching Codex prompting guidance.",
+        "Use plan-first workflow for complex or ambiguous tasks; ask the agent to interview the user before execution when needed.",
+        "Put durable rules in `AGENTS.md`; keep one-off task detail in this handbook and `FIRST-PROMPT.MD`.",
+        "Use `~/.codex/config.toml` or project `.codex/config.toml` for durable model, reasoning, sandbox, approval, and MCP preferences.",
+        "Ask the agent to test, check, and review results instead of only producing code or analysis.",
+    ]
+    if budget.name in {"deep", "architect"}:
+        items.append("For long tasks, use Goal mode; if `/goal` is unavailable, enable `[features] goals = true` in `config.toml`.")
+    if scenario == "research":
+        items.append("Prefer MCP/official sources for external references and avoid injecting long source summaries into the first prompt.")
+    if is_reverse_engineering_task(task):
+        items.append("For reverse analysis, stay in a local thread with strict approval; explain purpose and risk before each tool step.")
+    return items
+
+
+def environment_recommendations_for(result_language: str, scenario: str, task: str, ctx: ProjectContext) -> list[str]:
+    zh = result_language in {"zh", "bilingual"}
+    has_agents = bool(ctx.project_agents_path)
+    has_codex_config = (Path(ctx.root) / ".codex" / "config.toml").exists()
+    if zh:
+        items: list[str] = []
+        if not has_agents:
+            items.append("缺少项目级 `AGENTS.md`：可先 review `INIT-AGENTS.MD`，再人工合并为项目规则。")
+        if not has_codex_config:
+            items.append("缺少项目 `.codex/config.toml`：可信项目可添加 sandbox、approval、MCP 和 feature defaults。")
+        if scenario == "research":
+            items.append("如需稳定读取外部资料，建议配置 OpenAI Docs/Context7/GitHub 等 MCP，而不是依赖记忆或随意 web 搜索。")
+        if is_reverse_engineering_task(task):
+            items.extend(
+                [
+                    "逆向桌面目标需要目标文件在 Codex 可读路径内；若在 workspace 外，先让用户确认路径访问或复制样本到工作目录。",
+                    "建议准备只读识别工具：`file`、`shasum`、`strings`、`otool`、`codesign`；不要直接运行未知二进制。",
+                    "若识别为 PyInstaller，可建议后续配置/安装提取工具；安装新工具前必须获得用户批准。",
+                ]
+            )
+        if not items:
+            items.append("当前未发现必须补齐的环境配置；继续保持最小上下文和按需验证。")
+        return items
+    items = []
+    if not has_agents:
+        items.append("Project-level `AGENTS.md` is missing: review `INIT-AGENTS.MD` and merge it manually if it should become durable guidance.")
+    if not has_codex_config:
+        items.append("Project `.codex/config.toml` is missing: trusted projects can add sandbox, approval, MCP, and feature defaults.")
+    if scenario == "research":
+        items.append("For stable external references, configure MCP servers such as OpenAI Docs, Context7, or GitHub instead of relying on memory or ad hoc web search.")
+    if is_reverse_engineering_task(task):
+        items.extend(
+            [
+                "Desktop reverse targets must be readable by Codex; if the target is outside the workspace, ask the user to confirm access or copy the sample into the working directory.",
+                "Prepare read-only identification tools: `file`, `shasum`, `strings`, `otool`, `codesign`; do not run unknown binaries directly.",
+                "If PyInstaller is detected, suggest extraction tooling later; get user approval before installing new tools.",
+            ]
+        )
+    if not items:
+        items.append("No required environment gap detected; keep context minimal and verify only as needed.")
+    return items
 
 
 def context_completion_for(result_language: str, ctx: ProjectContext) -> list[str]:
@@ -635,7 +838,9 @@ def build_result(args: argparse.Namespace) -> IntakeResult:
     benchmark_mode = getattr(args, "benchmark_mode", "execution")
     compression = budget.default_compression if requested_compression == "auto" else requested_compression
     quality = evaluate_prompt_quality(args.task, language)
-    ctx = safe_walk(Path(args.project).resolve(), budget.max_scanned_files, scenario)
+    scan_limit = 0 if has_ambiguous_external_target(args.task) else budget.max_scanned_files
+    skip_reason = "skipped until desktop target path is provided" if has_ambiguous_external_target(args.task) else "scan skipped by budget"
+    ctx = safe_walk(Path(args.project).resolve(), scan_limit, scenario, skip_reason)
     result = IntakeResult(
         task=args.task,
         scenario=scenario,
@@ -648,11 +853,14 @@ def build_result(args: argparse.Namespace) -> IntakeResult:
         normalized_goal=normalize_goal(args.task, scenario, language),
         current_task=current_task_for(args.task, scenario, language),
         quality_scores=quality,
-        blocking_questions=blocking_questions_for(scenario, language, budget),
+        blocking_questions=blocking_questions_for(scenario, language, budget, args.task),
         assumptions=assumptions_for(scenario, language, benchmark_mode),
-        acceptance_criteria=acceptance_for(scenario, language),
-        hard_constraints=constraints_for(scenario, language, benchmark_mode),
+        acceptance_criteria=acceptance_for(scenario, language, args.task),
+        hard_constraints=constraints_for(scenario, language, benchmark_mode, args.task),
         search_plan=search_plan_for(scenario, language, budget),
+        context_acquisition_plan=[],
+        codex_workflow_recommendations=[],
+        environment_recommendations=[],
         context_completion=[],
         tutorial_suggestions=tutorial_suggestions(scenario, language),
         project_context=ctx,
@@ -661,6 +869,9 @@ def build_result(args: argparse.Namespace) -> IntakeResult:
         budget_warnings=[],
     )
     result.context_completion = context_completion_for(language, ctx)
+    result.context_acquisition_plan = context_acquisition_for(language, scenario, args.task, ctx, budget)
+    result.codex_workflow_recommendations = codex_workflow_for(language, scenario, args.task, budget)
+    result.environment_recommendations = environment_recommendations_for(language, scenario, args.task, ctx)
     brief = build_first_prompt(result)
     result.brief_token_estimate = estimate_tokens(brief)
     result.budget_warnings = budget_warnings(result, brief)
@@ -743,16 +954,25 @@ def build_spec(result: IntakeResult) -> str:
 ## 8. {heading(lang, "拓展搜索计划", "Extended Search Plan")}
 {bullet(result.search_plan)}
 
-## 9. {heading(lang, "上下文补全", "Context Completion")}
+## 9. {heading(lang, "上下文获取动作", "Context Acquisition Actions")}
+{bullet(result.context_acquisition_plan)}
+
+## 10. {heading(lang, "Codex 推荐工作流与设置", "Codex Workflow And Settings")}
+{bullet(result.codex_workflow_recommendations)}
+
+## 11. {heading(lang, "缺失工具与环境建议", "Missing Tools And Environment Recommendations")}
+{bullet(result.environment_recommendations)}
+
+## 12. {heading(lang, "上下文补全", "Context Completion")}
 {bullet(result.context_completion)}
 
-## 10. {heading(lang, "完成标准", "Done When")}
+## 13. {heading(lang, "完成标准", "Done When")}
 {bullet(result.acceptance_criteria)}
 
-## 11. {heading(lang, "Token Discipline Notes", "Token Discipline Notes")}
+## 14. {heading(lang, "Token Discipline Notes", "Token Discipline Notes")}
 {bullet(result.tutorial_suggestions)}
 
-## 12. {heading(lang, "预算警告", "Budget Warnings")}
+## 15. {heading(lang, "预算警告", "Budget Warnings")}
 {bullet(result.budget_warnings)}
 """
 
@@ -769,10 +989,19 @@ def build_agents(result: IntakeResult) -> str:
         global_label = "全局 AGENTS 摘要"
         project_label = "现有项目 AGENTS 摘要"
         no_global = "全局 AGENTS.md 不存在或没有可摘要的规则。"
+        no_project = "未发现现有项目 AGENTS.md。"
+        source_label = "来源"
+        conflict_label = "冲突处理策略"
+        conflict_lines = [
+            "全局/个人 Codex 指令优先级高于本项目级建议。",
+            "不要加入与安全、sandbox、approval 或工具使用规则冲突的规则。",
+            f"一次性任务细节保留在 `{OUTPUT_SPEC}`，不要写入项目级 AGENTS。",
+        ]
+        guidance_label = "长期项目规则建议"
         durable = [
             "正式执行前先给出短计划。",
             "不要默认读取 secret 文件、生产日志、数据库 dump 或 token cache。",
-            f"pre-vibe 只注入 `{OUTPUT_PROMPT}`，不要注入 `{OUTPUT_SPEC}` 全文。",
+            f"正式执行只注入 `{OUTPUT_PROMPT}`，不要注入 `{OUTPUT_SPEC}` 全文。",
             "遇到非阻塞未知项，用假设继续；只问 blocking questions。",
             "完成后报告修改/产物、验证结果、剩余风险。",
         ]
@@ -784,10 +1013,19 @@ def build_agents(result: IntakeResult) -> str:
         global_label = "Global AGENTS Summary"
         project_label = "Existing Project AGENTS Summary"
         no_global = "Global AGENTS.md not found or has no summarizable rules."
+        no_project = "No existing project AGENTS.md found."
+        source_label = "Source"
+        conflict_label = "Conflict Policy"
+        conflict_lines = [
+            "Global/personal Codex instructions remain higher priority than this generated project guidance.",
+            "Do not add rules that contradict security, sandbox, approval, or tool-use instructions.",
+            f"Keep one-off task details in `{OUTPUT_SPEC}`, not in project-level AGENTS.",
+        ]
+        guidance_label = "Durable Project Guidance"
         durable = [
             "Propose a short plan before formal execution.",
             "Do not read secret files, production logs, database dumps, or token caches by default.",
-            f"pre-vibe injects only `{OUTPUT_PROMPT}`; do not inject the full `{OUTPUT_SPEC}`.",
+            f"Formal execution injects only `{OUTPUT_PROMPT}`; do not inject the full `{OUTPUT_SPEC}`.",
             "Continue with assumptions for non-blocking unknowns; ask only blocking questions.",
             "Report deliverables/changes, verification results, and remaining risks.",
         ]
@@ -795,19 +1033,17 @@ def build_agents(result: IntakeResult) -> str:
 {replace}
 
 ## {global_label}
-- Source: `{ctx.global_agents_path or "not found"}`
+- {source_label}: `{ctx.global_agents_path or "not found"}`
 {bullet(ctx.global_agents_summary or [no_global])}
 
 ## {project_label}
-- Source: `{ctx.project_agents_path or "not found"}`
-{bullet(ctx.project_agents_summary or ["No existing project AGENTS.md found."])}
+- {source_label}: `{ctx.project_agents_path or "not found"}`
+{bullet(ctx.project_agents_summary or [no_project])}
 
-## Conflict Policy
-- Global/personal Codex instructions remain higher priority than this generated project guidance.
-- Do not add rules that contradict security, sandbox, approval, or tool-use instructions.
-- Keep one-off task details in `{OUTPUT_SPEC}`, not in project-level AGENTS.
+## {conflict_label}
+{bullet(conflict_lines)}
 
-## Durable Project Guidance
+## {guidance_label}
 {bullet(durable)}
 """
 
@@ -820,7 +1056,7 @@ def first_prompt_lines(result: IntakeResult, terse: bool = False) -> list[str]:
     if lang in {"zh", "bilingual"}:
         lines = [
             f"# {OUTPUT_PROMPT}",
-            f"> 注入路径指引：用户批准后执行 `/clear`，然后只把本文件作为新 session 的初始上下文注入。不要注入 `{OUTPUT_SPEC}` 全文。",
+            f"> 注入路径指引：请先让用户查看并按需修改本文件。用户批准后执行 `/clear`，然后只把本文件作为新 session 的初始上下文注入。不要注入 `{OUTPUT_SPEC}` 全文。",
             "",
             "## Goal",
             result.normalized_goal,
@@ -842,6 +1078,8 @@ def first_prompt_lines(result: IntakeResult, terse: bool = False) -> list[str]:
             lines.extend(f"- {item}" for item in ctx.relevant_pointers[:4 if terse else 8])
         if result.search_plan and not terse:
             lines.extend(["", "## Search Policy", bullet(result.search_plan[:3])])
+        if result.context_acquisition_plan and not terse:
+            lines.extend(["", "## Context Acquisition", bullet(result.context_acquisition_plan[:4])])
         lines.extend(
             [
                 "",
@@ -855,7 +1093,7 @@ def first_prompt_lines(result: IntakeResult, terse: bool = False) -> list[str]:
         return lines
     lines = [
         f"# {OUTPUT_PROMPT}",
-        f"> Injection guide: after user approval, run `/clear`, then inject only this file as the initial context. Do not inject the full `{OUTPUT_SPEC}`.",
+        f"> Injection guide: ask the user to review and edit this file first. After approval, run `/clear`, then inject only this file as the initial context. Do not inject the full `{OUTPUT_SPEC}`.",
         "",
         "## Goal",
         result.normalized_goal,
@@ -877,6 +1115,8 @@ def first_prompt_lines(result: IntakeResult, terse: bool = False) -> list[str]:
         lines.extend(f"- {item}" for item in ctx.relevant_pointers[:4 if terse else 8])
     if result.search_plan and not terse:
         lines.extend(["", "## Search Policy", bullet(result.search_plan[:3])])
+    if result.context_acquisition_plan and not terse:
+        lines.extend(["", "## Context Acquisition", bullet(result.context_acquisition_plan[:4])])
     lines.extend(
         [
             "",
@@ -932,24 +1172,27 @@ def write_outputs(result: IntakeResult, output_dir: Path) -> dict[str, Path]:
 
 def build_handoff(result: IntakeResult, files: dict[str, Path]) -> str:
     if result.language in {"zh", "bilingual"}:
+        question_step = "1. 请先让用户查看/修改三份文件，尤其是 `FIRST-PROMPT.MD`；如有 Blocking Questions，先请用户回答。"
         return "\n".join(
             [
                 "",
                 "NEXT STEP",
-                f"1. 请用户查看/修改 `{files['spec']}` 和 `{files['agents']}`。",
-                "2. 询问用户：是否批准执行 `/clear` 并将 FIRST-PROMPT.MD 作为新 session 初始上下文注入？",
-                f"3. 用户批准后，只注入 `{files['prompt']}`，不要注入完整 spec。",
-                f"4. FIRST-PROMPT token estimate: {result.brief_token_estimate}; budget: {result.budget.max_injection_tokens}.",
+                f"{question_step}",
+                f"2. 文件路径：`{files['spec']}`、`{files['agents']}`、`{files['prompt']}`。",
+                "3. 询问用户：是否批准执行 `/clear` 并将修改后的 FIRST-PROMPT.MD 作为新 session 初始上下文注入？",
+                f"4. 用户批准后，只注入 `{files['prompt']}`，不要注入完整 spec。",
+                f"5. FIRST-PROMPT token estimate: {result.brief_token_estimate}; budget: {result.budget.max_injection_tokens}.",
             ]
         )
     return "\n".join(
         [
             "",
             "NEXT STEP",
-            f"1. Ask the user to review/edit `{files['spec']}` and `{files['agents']}`.",
-            "2. Ask for approval to run `/clear` and inject FIRST-PROMPT.MD as the new session's initial context.",
-            f"3. After approval, inject only `{files['prompt']}`, not the full spec.",
-            f"4. FIRST-PROMPT token estimate: {result.brief_token_estimate}; budget: {result.budget.max_injection_tokens}.",
+            "1. Ask the user to review/edit all three files, especially `FIRST-PROMPT.MD`; resolve Blocking Questions first if present.",
+            f"2. Files: `{files['spec']}`, `{files['agents']}`, `{files['prompt']}`.",
+            "3. Ask for approval to run `/clear` and inject the edited FIRST-PROMPT.MD as the new session's initial context.",
+            f"4. After approval, inject only `{files['prompt']}`, not the full spec.",
+            f"5. FIRST-PROMPT token estimate: {result.brief_token_estimate}; budget: {result.budget.max_injection_tokens}.",
         ]
     )
 
@@ -1004,7 +1247,7 @@ def main() -> int:
         }
         print(json.dumps(payload, ensure_ascii=False))
     else:
-        print(f"pre-vibe generated 3 Markdown files in {Path(args.output_dir).resolve()}")
+        print(f"Generated 3 Markdown files in {Path(args.output_dir).resolve()}")
         for label, path in files.items():
             print(f"- {label}: {path}")
         if args.interactive:

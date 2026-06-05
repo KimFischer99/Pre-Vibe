@@ -1,4 +1,4 @@
-# pre-vibe v0.1.1
+# pre-vibe v0.1.2
 
 pre-vibe is a token-disciplined first-turn context intake compiler for agent workflows. It turns a vague task into three project-facing Markdown files:
 

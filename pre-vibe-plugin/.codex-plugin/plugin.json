@@ -1,6 +1,6 @@
 {
   "name": "pre-vibe",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Agent first-turn context intake compiler for general, research, and coding workflows.",
   "author": {
     "name": "Kim Fischer",

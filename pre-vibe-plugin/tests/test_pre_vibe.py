@@ -64,6 +64,24 @@ class PreVibeTests(unittest.TestCase):
             self.assertEqual(result.project_context.scanned_files, [])
             self.assertEqual(result.blocking_questions, [])
 
+    def test_desktop_reverse_request_requires_target_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            result = build_result(self.make_args("我要逆向一个桌面上的这个东西，我要用上pre-vibe", tmp))
+            self.assertEqual(result.scenario, "coding")
+            self.assertEqual(result.complexity, "standard")
+            self.assertEqual(result.project_context.scanned_files, [])
+            self.assertIn("绝对路径", result.blocking_questions[0])
+            self.assertIn("不要绕过 DRM", "\n".join(result.hard_constraints))
+            files = write_outputs(result, Path(tmp))
+            spec = files["spec"].read_text(encoding="utf-8")
+            prompt = files["prompt"].read_text(encoding="utf-8")
+            self.assertIn("桌面目标对象", prompt)
+            self.assertIn("绝对路径", prompt)
+            self.assertIn("上下文获取动作", spec)
+            self.assertIn("Codex 推荐工作流与设置", spec)
+            self.assertIn(".codex/config.toml", spec)
+            self.assertIn("用户查看并按需修改", prompt)
+
     def test_init_agents_reads_global_agents_without_conflict(self):
         with tempfile.TemporaryDirectory() as tmp:
             codex_home = Path(tmp, "codex-home")

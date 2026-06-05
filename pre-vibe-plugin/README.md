@@ -1,4 +1,4 @@
-# pre-vibe Codex Plugin
+# pre-vibe Codex Plugin v0.1.2
 
 pre-vibe is a token-disciplined first-turn context compiler for agent workflows.
 
