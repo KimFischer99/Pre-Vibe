@@ -4,9 +4,8 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
-pre-vibe-reports/generated/
-pre-vibe-reports/live-v2/
-pre-vibe-plugin/.tmp/
-test/pre-vibe-simulation/child-process.log
-test/pre-vibe-simulation/simulation-result.json
-test/pre-vibe-simulation/generated/.pre-vibe/
+plugins/pre-vibe/.tmp/
+.pre-vibe/
+PRE_VIBE_SPEC.md
+PROJECT_AGENTS.md
+FIRST_PROMPT.md

@@ -1,0 +1,38 @@
+{
+  "name": "pre-vibe",
+  "version": "0.5.0",
+  "description": "Codex workflow plugin that turns rough first-session requests into project-specific starting context, handbook guidance, and a compact first prompt.",
+  "author": {
+    "name": "Kim Fischer",
+    "email": "opensource@users.noreply.github.com",
+    "url": "https://github.com/KimFischer99/Pre-Vibe"
+  },
+  "homepage": "https://github.com/KimFischer99/Pre-Vibe",
+  "repository": "https://github.com/KimFischer99/Pre-Vibe",
+  "license": "MIT",
+  "keywords": [
+    "agent",
+    "context",
+    "prompt",
+    "spec",
+    "codex"
+  ],
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Pre-Vibe",
+    "shortDescription": "Turn rough starts into clean Codex starting context.",
+    "longDescription": "Pre-Vibe is a Codex workflow plugin for new sessions. It helps Codex clarify vague requests, run safe project and Codex-component indexing, build task-specific starting documents, and continue with only a compact first prompt after user approval.",
+    "developerName": "Kim Fischer",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": [
+      "Prepare my rough task with Pre-Vibe.",
+      "Build project starting context before work.",
+      "Clarify this new Codex session first."
+    ],
+    "brandColor": "#2563EB"
+  }
+}

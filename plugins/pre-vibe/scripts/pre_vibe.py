@@ -4,7 +4,7 @@
 The module is intentionally not a Markdown template generator. It provides
 deterministic helpers that Codex can call while running the pre-vibe workflow:
 task routing, intensity selection, safe project scanning, environment inspection,
-state gating, and artifact writes for LLM-authored content.
+state gating, question UI payloads, and document writes for LLM-authored content.
 """
 
 from __future__ import annotations
@@ -101,7 +101,6 @@ CODING_TERMS = (
     "test",
     "deploy",
     "plugin",
-    "slash",
     "mvp",
     "reverse",
     "reverse-engineer",
@@ -117,7 +116,6 @@ CODING_TERMS = (
     "测试",
     "部署",
     "插件",
-    "斜杠命令",
     "逆向",
     "反编译",
     "反汇编",
@@ -203,7 +201,7 @@ class IntensityProfile:
 INTENSITY_PROFILES = {
     "mini": IntensityProfile(
         "mini",
-        "Light intake for ordinary work, small research, or tiny changes.",
+        "Light preparation for ordinary work, small research, or tiny changes.",
         max_questions=3,
         max_fetches=0,
         max_scanned_files=8,
@@ -212,7 +210,7 @@ INTENSITY_PROFILES = {
     ),
     "default": IntensityProfile(
         "default",
-        "Balanced intake for normal research and coding tasks.",
+        "Balanced preparation for normal research and coding tasks.",
         max_questions=5,
         max_fetches=2,
         max_scanned_files=10,
@@ -221,7 +219,7 @@ INTENSITY_PROFILES = {
     ),
     "architect": IntensityProfile(
         "architect",
-        "Full staged intake for new projects, refactors, and complex research.",
+        "Full staged preparation for new projects, refactors, and complex research.",
         max_questions=10,
         max_fetches=6,
         max_scanned_files=60,
@@ -282,7 +280,6 @@ class CodexEnvironment:
     installed_plugins: list[str]
     marketplace_plugins: list[str]
     installed_skills: list[str]
-    slash_prompts: list[str]
     local_plugins_path: str | None
     marketplace_path: str | None
     marketplace_has_pre_vibe: bool
@@ -604,6 +601,179 @@ def collect_skill_names(roots: Iterable[Path], limit: int = 80) -> list[str]:
     return skills
 
 
+def clean_header(value: str, fallback: str = "Question") -> str:
+    value = re.sub(r"\s+", " ", value).strip() or fallback
+    return value[:12]
+
+
+def option_objects(question: BlockingQuestion) -> list[dict[str, str]]:
+    options = list(question.options[:3])
+    if len(options) < 2:
+        options.extend(["Use best default", "Ask later"][len(options) :])
+    return [
+        {
+            "label": option[:36],
+            "description": question.reason[:140] or "Choose this option to continue.",
+        }
+        for option in options[:3]
+    ]
+
+
+def native_question_payload(decision: IntakeDecision) -> dict[str, Any] | None:
+    if not decision.blocking_questions:
+        return None
+    questions = [
+        {
+            "header": clean_header(question.header),
+            "id": question.id,
+            "question": question.question,
+            "options": option_objects(question),
+        }
+        for question in decision.blocking_questions
+    ]
+    return {
+        "preferred_surface": "codex_native_question_ui",
+        "codex_request_user_input": {
+            "questions": questions,
+        },
+        "mcp_elicitation": {
+            "method": "elicitation/create",
+            "message": "Please answer the key questions so Codex can build the project starting context.",
+            "requestedSchema": {
+                "type": "object",
+                "properties": {
+                    question.id: {
+                        "type": "string",
+                        "title": clean_header(question.header),
+                        "description": question.question,
+                    }
+                    for question in decision.blocking_questions
+                },
+                "required": [question.id for question in decision.blocking_questions],
+            },
+        },
+        "fallback_policy": "If this Codex surface cannot open native question UI or MCP elicitation, pause and report that native question UI is unavailable instead of printing backend fields.",
+    }
+
+
+def visible_status_for_state(state: str, language: str = "auto") -> str:
+    zh = language in {"zh", "bilingual", "auto"}
+    if state == NEEDS_CONTEXT:
+        return "正在读取项目结构和 Codex 环境。" if zh else "Reading the project and Codex environment."
+    if state == NEEDS_USER_INPUT:
+        return "正在打开关键问题确认窗口。" if zh else "Opening the key-question dialog."
+    if state == READY_TO_COMPILE:
+        return "正在构建项目初始文档。" if zh else "Building the project starting documents."
+    if state == AWAITING_APPROVAL:
+        return "项目初始文档已准备好，正在等待确认。" if zh else "The project starting documents are ready for approval."
+    if state == READY_TO_INJECT:
+        return "正在准备清理上下文并注入首轮提示。" if zh else "Preparing to clear context and inject the first prompt."
+    if state == DONE:
+        return "项目启动上下文已完成。" if zh else "The project starting context is complete."
+    return "正在准备项目启动上下文。" if zh else "Preparing the project starting context."
+
+
+def redact_path_for_context(value: str | None, project_root: str | None = None) -> str | None:
+    if not value:
+        return value
+    path = value
+    if project_root and path == project_root:
+        return "."
+    home = str(Path.home())
+    if path.startswith(home):
+        return "~" + path[len(home) :]
+    return path
+
+
+def compact_project_context(context: ProjectContext | None) -> dict[str, Any] | None:
+    if not context:
+        return None
+    payload = asdict(context)
+    root = context.root
+    payload["root"] = "."
+    payload["global_agents_path"] = (
+        "global AGENTS.md" if context.global_agents_path else None
+    )
+    payload["project_agents_path"] = (
+        "project AGENTS.md" if context.project_agents_path else None
+    )
+    payload["do_not_touch"] = [
+        redact_path_for_context(item, root) or item for item in context.do_not_touch
+    ]
+    return payload
+
+
+def compact_codex_environment(environment: CodexEnvironment | None) -> dict[str, Any] | None:
+    if not environment:
+        return None
+    return {
+        "global_agents_present": bool(environment.global_agents_path),
+        "installed_plugin_cache_count": len(environment.installed_plugin_cache),
+        "installed_plugins": environment.installed_plugins,
+        "marketplace_plugins": environment.marketplace_plugins,
+        "installed_standalone_skills": environment.installed_skills,
+        "local_plugins_present": bool(environment.local_plugins_path),
+        "marketplace_present": bool(environment.marketplace_path),
+        "marketplace_has_pre_vibe": environment.marketplace_has_pre_vibe,
+        "notes": environment.notes,
+    }
+
+
+def compact_evidence_ref(ref: EvidenceRef, project_root: str | None = None) -> dict[str, str]:
+    return {
+        "id": ref.id,
+        "source": redact_path_for_context(ref.source, project_root) or ref.source,
+        "summary": ref.summary,
+    }
+
+
+def compact_decision(decision: IntakeDecision) -> dict[str, Any]:
+    project_root = decision.project_context.root if decision.project_context else None
+    return {
+        "state": decision.state,
+        "scenario": decision.scenario,
+        "intensity": decision.intensity,
+        "language": decision.language,
+        "risk": decision.risk,
+        "uncertainty": decision.uncertainty,
+        "questions": [asdict(question) for question in decision.blocking_questions],
+        "context_actions": [asdict(action) for action in decision.context_actions],
+        "assumptions": decision.assumptions,
+        "document_rules": decision.artifact_rules,
+        "evidence_refs": [
+            compact_evidence_ref(ref, project_root) for ref in decision.evidence_refs
+        ],
+        "project_context": compact_project_context(decision.project_context),
+        "codex_environment": compact_codex_environment(decision.codex_environment),
+        "component_suggestions": decision.component_suggestions,
+        "missing_component_suggestions": decision.missing_component_suggestions,
+        "question_request": native_question_payload(decision),
+        "user_visible_status": visible_status_for_state(decision.state, decision.language),
+    }
+
+
+def prepare_project_start(
+    task: str,
+    project: str | Path = ".",
+    *,
+    scenario: str = "auto",
+    intensity: str = "auto",
+    language: str = "auto",
+    evidence_refs: Iterable[EvidenceRef] | None = None,
+    scan: bool = True,
+) -> dict[str, Any]:
+    decision = route_intake(
+        task,
+        project,
+        scenario=scenario,
+        intensity=intensity,
+        language=language,
+        evidence_refs=evidence_refs,
+        scan=scan,
+    )
+    return compact_decision(decision)
+
+
 def collect_configured_plugins(config_path: Path) -> list[str]:
     if not config_path.exists():
         return []
@@ -678,19 +848,11 @@ def inspect_codex_environment() -> CodexEnvironment:
         default_codex_home / "skills",
         Path.home() / ".agents" / "skills",
     ]
-    if cache_root.exists():
-        skill_roots.extend(path / "skills" for path in cache_root.glob("*/*/*") if path.is_dir())
-    slash_prompt_dir = default_codex_home / "prompts"
-    slash_prompts: list[str] = []
-    if slash_prompt_dir.exists():
-        slash_prompts = [path.name for path in sorted(slash_prompt_dir.glob("*.md"))[:80]]
     notes = []
     if not global_agents:
         notes.append("No global AGENTS.md was found.")
     if not marketplace_has_pre_vibe:
         notes.append("pre-vibe is not listed in the default personal marketplace.")
-    if "pre-vibe.md" not in slash_prompts:
-        notes.append("The pre-vibe slash prompt command has not been installed into ~/.codex/prompts.")
     return CodexEnvironment(
         codex_home=codex_home or str(default_codex_home),
         global_agents_path=str(global_agents) if global_agents else None,
@@ -698,7 +860,6 @@ def inspect_codex_environment() -> CodexEnvironment:
         installed_plugins=installed_plugins,
         marketplace_plugins=marketplace_plugins,
         installed_skills=collect_skill_names(skill_roots),
-        slash_prompts=slash_prompts,
         local_plugins_path=str(Path.home() / "plugins"),
         marketplace_path=str(marketplace) if marketplace.exists() else None,
         marketplace_has_pre_vibe=marketplace_has_pre_vibe,
@@ -856,7 +1017,7 @@ def context_actions_for(
             ContextAction(
                 "codex_component_index",
                 "environment",
-                "Inspect AGENTS guidance, installed Codex components, plugins, skills, and slash prompt availability before asking questions.",
+                "Inspect AGENTS guidance and installed Codex components before asking questions.",
             )
         )
     if scenario in {"research", "mixed"} and profile.allow_fetch:
@@ -964,13 +1125,13 @@ def route_intake(
             EvidenceRef(
                 "codex_component_index",
                 codex_environment.codex_home or "Codex home",
-                f"Indexed {len(codex_environment.installed_plugins)} plugins, {len(codex_environment.installed_skills)} skills, and {len(codex_environment.slash_prompts)} slash prompt files.",
+                f"Indexed {len(codex_environment.installed_plugins)} plugins and {len(codex_environment.installed_skills)} standalone skills.",
             )
         )
     state = determine_next_state(questions, actions, evidence)
     assumptions = []
     if selected_intensity == "mini":
-        assumptions.append("Use the smallest useful intake path unless the user asks for deeper planning.")
+        assumptions.append("Use the smallest useful preparation path unless the user asks for deeper planning.")
     return IntakeDecision(
         raw_input=task,
         scenario=selected_scenario,
@@ -1036,12 +1197,12 @@ def write_artifacts(output_dir: Path, contents: dict[str, str], status: dict[str
         path = output_dir / allowed[key]
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(redact_secret_like(text).rstrip() + "\n", encoding="utf-8")
-        written[key] = str(path)
+        written[key] = str(path.relative_to(output_dir))
     if status is not None:
         status_path = output_dir / ARTIFACT_FILENAMES["status"]
         status_path.parent.mkdir(parents=True, exist_ok=True)
         status_path.write_text(json.dumps(status, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        written["status"] = str(status_path)
+        written["status"] = str(status_path.relative_to(output_dir))
     return written
 
 
@@ -1054,7 +1215,7 @@ def to_jsonable(value: Any) -> Any:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Inspect pre-vibe intake routing without generating Markdown templates.")
+    parser = argparse.ArgumentParser(description="Inspect Pre-Vibe routing without generating Markdown templates.")
     parser.add_argument("--task", required=True)
     parser.add_argument("--project", default=".")
     parser.add_argument("--scenario", default="auto", choices=("auto", "general", "research", "coding", "mixed"))

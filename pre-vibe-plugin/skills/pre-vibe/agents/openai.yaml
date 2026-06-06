@@ -1,7 +1,0 @@
-interface:
-  display_name: "pre-vibe"
-  short_description: "Turn vague starts into a clean Codex intake workflow"
-  default_prompt: "Before starting work, run pre-vibe intake and turn my rough request into a project-specific spec, PROJECT_AGENTS guidance, and first prompt."
-  brand_color: "#2563EB"
-policy:
-  allow_implicit_invocation: true
