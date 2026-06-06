@@ -1,25 +1,19 @@
-# Token Budget
+# Intensity Profiles
 
-Budgets are hard limits.
+This file remains for compatibility with older references. v0.3 no longer treats token
+counts as strict budgets. Use intensity profiles to control workflow effort, then keep
+the first prompt minimal.
 
-| Mode | Behavior | Injection Target |
-|---|---|---|
-| `micro` | no scan, no fetch, no questions | 300-800 tokens |
-| `standard` | max 3 questions, light scan | 800-1800 tokens |
-| `deep` | max 6 questions, broader scan | 1800-3500 tokens |
-| `architect` | max 10 questions, staged injection | 3500-6000 tokens |
+| Intensity | Behavior |
+|---|---|
+| `mini` | Up to 3 blocking questions; no project scan or fetch by default. |
+| `default` | Up to 5 blocking questions; light allowlist scan; fetch only when useful. |
+| `architect` | Up to 10 blocking questions in staged rounds; broader scan/fetch; full handbook when the task needs it. |
 
-Compression order:
+Compression rule for `FIRST_PROMPT.md`:
 
-1. remove rationale
-2. remove examples
-3. collapse background into assumptions
-4. replace summaries with file/source pointers
-5. narrow current task scope
-
-Default mapping:
-
-- general/daily -> `micro + terse`
-- research -> `standard + balanced`
-- coding -> `standard/deep + balanced`
-- new project/refactor/system design -> `architect + staged`
+1. Remove rationale.
+2. Remove examples.
+3. Collapse background into assumptions.
+4. Replace summaries with file/source pointers.
+5. Narrow the current task.

@@ -1,19 +1,42 @@
-# Agent Adapters
+# Agent Adapter: Codex
 
-## Codex
+pre-vibe v0.3 is Codex-first. Other agent adapters can be added later, but the current
+artifact rules should optimize for Codex.
 
-- Prefer plan-first execution.
-- Mention `AGENTS.md` guidance when durable.
-- Include files to inspect and verification commands.
-- Require a concise report of changed files, decisions, verification, and risks.
+## Codex-Friendly `INIT_AGENTS.md`
 
-## Claude Code
+Use durable instructions that improve repeated work in the project:
 
-- Suggest using a clean context when prior discussion is noisy.
-- Keep durable memory concise.
-- Separate one-off task details from `CLAUDE.md` or `AGENTS.md`.
+- Build, lint, test, and validation commands.
+- Directory conventions.
+- Generated/vendor/secret paths to avoid.
+- Review expectations.
+- Project-specific file ownership or naming rules.
+- Summary of global AGENTS.md and project AGENTS.md when available.
+- Conflict policy with higher-priority instructions.
+- No rule that conflicts with, narrows, or weakens global AGENTS.md.
 
-## Generic Agent
+Do not add one-off task requirements.
 
-- Avoid tool-specific assumptions.
-- State goal, context, constraints, output format, and acceptance criteria.
+## Codex-Friendly `FIRST_PROMPT.md`
+
+Use compact sections:
+
+- `Goal`
+- `Current Task`
+- `Hard Constraints`
+- `Key Assumptions`
+- `Relevant Context`
+- `Done When`
+- `Operating Mode`
+
+The prompt should tell Codex what to inspect first, what to avoid, when to ask a
+blocking question, and how to report completion.
+
+## Codex Workflow Features
+
+- Clear context only after user approval, then inject the first prompt.
+- Inject only `FIRST_PROMPT.md`.
+- Reference `PRE_VIBE_SPEC.md` only as an optional handbook path.
+- Let Codex read files on demand instead of pasting long summaries.
+- For complex work, ask Codex to start with a short plan before editing.

@@ -1,7 +1,7 @@
 {
   "name": "pre-vibe",
-  "version": "0.1.2",
-  "description": "Agent first-turn context intake compiler for general, research, and coding workflows.",
+  "version": "0.3.1+codex.20260606090140",
+  "description": "Codex workflow plugin that turns vague first-session requests into a project-specific intake flow, handbook spec, AGENTS guidance, and first prompt.",
   "author": {
     "name": "Kim Fischer",
     "email": "kim@example.com",
@@ -17,10 +17,11 @@
     "codex"
   ],
   "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
   "interface": {
     "displayName": "pre-vibe",
-    "shortDescription": "Compile vague tasks into budgeted agent startup context.",
-    "longDescription": "pre-vibe prepares a token-disciplined first-turn context package with a handbook spec, project AGENTS guidance, and a compact first prompt that is injected only after user approval.",
+    "shortDescription": "Guide rough starts into a clean Codex intake workflow.",
+    "longDescription": "pre-vibe is a Codex workflow plugin for first-session intake. It helps Codex clarify vague requests, inspect safe project and environment context, write task-specific artifacts, and inject only a compact first prompt after user approval.",
     "developerName": "Kim Fischer",
     "category": "Productivity",
     "capabilities": [
@@ -28,9 +29,9 @@
       "Write"
     ],
     "defaultPrompt": [
-      "Use pre-vibe to turn this idea into an agent-ready spec.",
-      "Prepare a research task with pre-vibe.",
-      "Prepare this coding task for Codex."
+      "Turn my rough idea into a clear Codex-ready task.",
+      "Prepare this new session with project-aware context.",
+      "Clarify this request before Codex starts work."
     ],
     "brandColor": "#2563EB"
   }
