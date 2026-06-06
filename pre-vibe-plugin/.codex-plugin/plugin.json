@@ -1,7 +1,7 @@
 {
   "name": "pre-vibe",
-  "version": "0.3.1+codex.20260606090140",
-  "description": "Codex workflow plugin that turns vague first-session requests into a project-specific intake flow, handbook spec, AGENTS guidance, and first prompt.",
+  "version": "0.4.0+codex.20260606195730",
+  "description": "Codex workflow plugin that turns vague first-session requests into a project-specific intake flow, handbook spec, PROJECT_AGENTS guidance, and first prompt.",
   "author": {
     "name": "Kim Fischer",
     "email": "kim@example.com",
@@ -21,14 +21,16 @@
   "interface": {
     "displayName": "pre-vibe",
     "shortDescription": "Guide rough starts into a clean Codex intake workflow.",
-    "longDescription": "pre-vibe is a Codex workflow plugin for first-session intake. It helps Codex clarify vague requests, inspect safe project and environment context, write task-specific artifacts, and inject only a compact first prompt after user approval.",
+    "longDescription": "pre-vibe is a Codex workflow plugin for first-session intake. It helps Codex clarify vague requests, run mandatory safe project and Codex-component indexing, write task-specific artifacts, and inject only a compact first prompt after user approval.",
     "developerName": "Kim Fischer",
     "category": "Productivity",
     "capabilities": [
       "Interactive",
-      "Write"
+      "Write",
+      "Slash prompt"
     ],
     "defaultPrompt": [
+      "/prompts:pre-vibe \"Describe the rough request here\"",
       "Turn my rough idea into a clear Codex-ready task.",
       "Prepare this new session with project-aware context.",
       "Clarify this request before Codex starts work."

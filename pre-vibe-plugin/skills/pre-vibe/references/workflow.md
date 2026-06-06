@@ -9,15 +9,16 @@ next correct action, then write task-specific artifacts.
 | State | Meaning | Allowed output |
 |---|---|---|
 | `INTAKE_STARTED` | Initial routing and intensity selection. | Progress update only. |
-| `NEEDS_USER_INPUT` | A blocking answer is missing. | Ask questions; keep intake notes in conversation context only. |
-| `NEEDS_CONTEXT` | Required context evidence is missing. | Run scans/lookups; keep intake notes in conversation context only. |
+| `NEEDS_CONTEXT` | Required project/component evidence is missing. | Run scans/lookups; keep intake notes in conversation context only. |
+| `NEEDS_USER_INPUT` | A blocking answer is missing after mandatory indexing. | Ask through native user-input/approval UI only; keep intake notes in conversation context only. |
 | `READY_TO_COMPILE` | Evidence is enough to write final artifacts. | Write three final Markdown files. |
 | `AWAITING_APPROVAL` | User reviews artifacts. | Show summary and ask for approval. |
 | `READY_TO_INJECT` | User approved. | pre-vibe clears context and injects only `FIRST_PROMPT.md`. |
 | `DONE` | Intake has ended. | Leave files on disk. |
 
-Never write the final `FIRST_PROMPT.md` while blocking questions or required context
-actions remain open.
+Always build the project execution index and Codex component index before asking
+questions. Never write the final `FIRST_PROMPT.md` while blocking questions or required
+context actions remain open.
 
 Do not write `INTAKE.md`, `PRE_VIBE_INTAKE.md`, or equivalent intake drafts to disk.
 Temporary intake notes belong only in the active pre-vibe conversation context.
@@ -26,9 +27,9 @@ Temporary intake notes belong only in the active pre-vibe conversation context.
 
 | Intensity | Use when | Behavior |
 |---|---|---|
-| `mini` | General work, simple writing, small research, tiny edits. | Up to 3 blocking questions; no scan/fetch by default. |
-| `default` | Normal research or coding tasks. | Up to 5 blocking questions; light allowlist scan; fetch only if useful. |
-| `architect` | New projects, refactors, high-risk work, complex research. | Up to 10 blocking questions in staged rounds; broader scan/fetch; fuller handbook. |
+| `mini` | General work, simple writing, small research, tiny edits. | Mandatory lightweight project/component indexing; up to 3 blocking questions; no fetch by default. |
+| `default` | Normal research or coding tasks. | Mandatory light allowlist scan and component index; up to 5 blocking questions; fetch only if useful. |
+| `architect` | New projects, refactors, high-risk work, complex research. | Mandatory broader scan/component index; up to 10 blocking questions in staged rounds; broader fetch; fuller handbook. |
 
 These profiles control workflow effort, not strict token limits. The final prompt still
 must stay compact and action-oriented.
@@ -39,7 +40,8 @@ Use evidence, not placeholders.
 
 - User answers prove intent, scope, permissions, and acceptance criteria.
 - Project files prove framework, scripts, conventions, and relevant paths.
-- Codex environment checks prove AGENTS/plugin/cache state.
+- Codex environment checks prove AGENTS guidance, installed plugins, skills, slash
+  prompt files, marketplace, and cache state.
 - External sources prove current facts only when the task depends on them.
 
 If the evidence does not exist yet, either acquire it or ask the user. Do not simulate
@@ -49,8 +51,8 @@ evidence in the final artifacts.
 
 ### General
 
-Focus on output contract: audience, format, tone, constraints, and done-when. Skip
-project scan unless the user names a file or the task is high-risk.
+Focus on output contract: audience, format, tone, constraints, and done-when. Keep the
+mandatory scan lightweight unless the user names files or the task is high-risk.
 
 ### Research
 
@@ -72,9 +74,9 @@ background crowd out the execution prompt.
 After `READY_TO_COMPILE`, write:
 
 - `PRE_VIBE_SPEC.md`
-- `INIT_AGENTS.md`
+- `PROJECT_AGENTS.md`
 - `FIRST_PROMPT.md`
 
-Show the user the meaningful parts of `INIT_AGENTS.md` and `FIRST_PROMPT.md`, then ask
+Show the user the meaningful parts of `PROJECT_AGENTS.md` and `FIRST_PROMPT.md`, then ask
 for approval. After approval, pre-vibe executes the clear-context step and the new
 session receives only `FIRST_PROMPT.md`.

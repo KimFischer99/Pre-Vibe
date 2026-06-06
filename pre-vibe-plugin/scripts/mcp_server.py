@@ -33,7 +33,7 @@ def tool_schema() -> list[dict[str, Any]]:
     return [
         {
             "name": "classify_intake",
-            "description": "Classify a user request, choose pre-vibe intensity, and return the next workflow state.",
+            "description": "Classify a user request, run mandatory project/component indexing, choose pre-vibe intensity, and return the next workflow state.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -42,7 +42,7 @@ def tool_schema() -> list[dict[str, Any]]:
                     "scenario": {"type": "string", "default": "auto"},
                     "intensity": {"type": "string", "default": "auto"},
                     "language": {"type": "string", "default": "auto"},
-                    "scan": {"type": "boolean", "default": False},
+                    "scan": {"type": "boolean", "default": True},
                 },
                 "required": ["task"],
             },
@@ -61,7 +61,7 @@ def tool_schema() -> list[dict[str, Any]]:
         },
         {
             "name": "inspect_codex_environment",
-            "description": "Inspect Codex AGENTS, plugin cache, and personal marketplace state.",
+            "description": "Inspect Codex AGENTS, installed plugins, skills, slash prompts, plugin cache, and personal marketplace state.",
             "inputSchema": {"type": "object", "properties": {}},
         },
         {
@@ -92,7 +92,7 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
                 scenario=arguments.get("scenario", "auto"),
                 intensity=arguments.get("intensity", "auto"),
                 language=arguments.get("language", "auto"),
-                scan=bool(arguments.get("scan", False)),
+                scan=bool(arguments.get("scan", True)),
             )
         )
     if name == "scan_project_safe":
@@ -130,7 +130,7 @@ def handle(request: dict[str, Any]) -> dict[str, Any] | None:
             "result": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "pre-vibe", "version": "0.3.1"},
+                "serverInfo": {"name": "pre-vibe", "version": "0.4.0"},
             },
         }
     if method == "tools/list":

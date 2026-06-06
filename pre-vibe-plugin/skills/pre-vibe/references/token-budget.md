@@ -1,14 +1,14 @@
 # Intensity Profiles
 
-This file remains for compatibility with older references. v0.3 no longer treats token
+This file remains for compatibility with older references. v0.4 no longer treats token
 counts as strict budgets. Use intensity profiles to control workflow effort, then keep
 the first prompt minimal.
 
 | Intensity | Behavior |
 |---|---|
-| `mini` | Up to 3 blocking questions; no project scan or fetch by default. |
-| `default` | Up to 5 blocking questions; light allowlist scan; fetch only when useful. |
-| `architect` | Up to 10 blocking questions in staged rounds; broader scan/fetch; full handbook when the task needs it. |
+| `mini` | Mandatory lightweight project/component index; up to 3 blocking questions; no fetch by default. |
+| `default` | Mandatory light allowlist scan and component index; up to 5 blocking questions; fetch only when useful. |
+| `architect` | Mandatory broader scan/component index; up to 10 blocking questions in staged rounds; broader fetch; full handbook when the task needs it. |
 
 Compression rule for `FIRST_PROMPT.md`:
 

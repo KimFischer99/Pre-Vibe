@@ -18,7 +18,7 @@ execution.
 
 - Preference questions that can be handled by a conservative default.
 - Curiosity questions.
-- Questions answerable from files or environment.
+- Questions answerable from the mandatory project/component index, files, or environment.
 - Questions already answered in the user's wording.
 - Open-ended brainstorming that does not narrow execution.
 
@@ -30,9 +30,12 @@ execution.
 | `default` | Ask up to 5 blocking questions. |
 | `architect` | Ask up to 10 blocking questions in short staged rounds; stop when the next action is clear. |
 
-Use Codex's native question/user-input UI when available. It should display the
-questions and let the user answer in the normal input surface. If that UI is
-unavailable, ask concise direct questions in chat.
+Build the project execution index and Codex component index before asking anything.
+
+Use Codex's native question/user-input or approval UI. It should display the questions
+and let the user answer in the proper input surface. If that UI is unavailable, do not
+ask blocking questions in ordinary chat; stop and report that native user-input UI is
+required for this workflow.
 
 ## Reverse Or Desktop Targets
 

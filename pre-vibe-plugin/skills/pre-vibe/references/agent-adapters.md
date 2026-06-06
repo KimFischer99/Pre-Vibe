@@ -1,9 +1,9 @@
 # Agent Adapter: Codex
 
-pre-vibe v0.3 is Codex-first. Other agent adapters can be added later, but the current
+pre-vibe v0.4 is Codex-first. Other agent adapters can be added later, but the current
 artifact rules should optimize for Codex.
 
-## Codex-Friendly `INIT_AGENTS.md`
+## Codex-Friendly `PROJECT_AGENTS.md`
 
 Use durable instructions that improve repeated work in the project:
 
@@ -15,8 +15,10 @@ Use durable instructions that improve repeated work in the project:
 - Summary of global AGENTS.md and project AGENTS.md when available.
 - Conflict policy with higher-priority instructions.
 - No rule that conflicts with, narrows, or weakens global AGENTS.md.
+- Component usage notes only when they change how Codex should execute in this project.
 
-Do not add one-off task requirements.
+Do not add one-off task requirements, tutorial prose, or references to the generated
+handbook filename/path.
 
 ## Codex-Friendly `FIRST_PROMPT.md`
 
@@ -37,6 +39,7 @@ blocking question, and how to report completion.
 
 - Clear context only after user approval, then inject the first prompt.
 - Inject only `FIRST_PROMPT.md`.
-- Reference `PRE_VIBE_SPEC.md` only as an optional handbook path.
+- Reference generated artifacts in `FIRST_PROMPT.md` only when it helps Codex start
+  cleanly.
 - Let Codex read files on demand instead of pasting long summaries.
 - For complex work, ask Codex to start with a short plan before editing.

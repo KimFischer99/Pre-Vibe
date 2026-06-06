@@ -1,6 +1,6 @@
 ---
 name: pre-vibe
-description: Use for vague or first-session requests that need a Codex intake workflow before work starts. Clarifies user intent, inspects safe project/environment context, and writes task-specific PRE_VIBE_SPEC.md, INIT_AGENTS.md, and FIRST_PROMPT.md. For general work, research, and coding.
+description: Use for vague or first-session requests that need a Codex plugin intake workflow before work starts. Clarifies user intent, performs mandatory project and Codex-component indexing, and writes task-specific PRE_VIBE_SPEC.md, PROJECT_AGENTS.md, and FIRST_PROMPT.md. For general work, research, and coding.
 ---
 
 # pre-vibe
@@ -14,6 +14,14 @@ manually calling a separate utility.
 Use this workflow when a user starts with a vague, short, chaotic, or high-risk request,
 especially at the beginning of a new session. Also use it when the user asks to prepare,
 clarify, standardize, or inject first-turn context.
+
+Supported starts:
+
+- Natural language trigger: the user asks Codex to use pre-vibe or to prepare first-turn
+  context.
+- Slash trigger: `/pre-vibe "用户初始问题"` when the current Codex surface exposes the
+  packaged command, or `/prompts:pre-vibe "用户初始问题"` on Codex versions where custom
+  prompt commands are namespaced under `prompts:`.
 
 Do not announce "I am using a skill/plugin" in ordinary progress updates. Say what is
 happening in natural task language, for example:
@@ -33,28 +41,30 @@ Follow this state machine. Do not skip gates.
    - Detect language from the user's input unless explicitly overridden.
    - Detect risk and uncertainty.
 
-2. `NEEDS_USER_INPUT`
-   - Enter this state when a blocking answer is missing.
-   - Ask only questions whose answers change scope, architecture, data model,
-     external dependency, user-facing behavior, acceptance criteria, permissions, or
-     irreversible operations.
-   - Use Codex's native question/user-input UI when available so the user can answer in
-     the proper input surface. If that UI is unavailable, ask the same questions
-     directly in chat.
-   - Wait for the user's answer before continuing.
-   - Do not generate final `PRE_VIBE_SPEC.md`, `INIT_AGENTS.md`, or `FIRST_PROMPT.md`
-     in this state.
-   - If intake notes are useful, keep them only in the current pre-vibe conversation
-     context. Do not write `INTAKE.md`, `PRE_VIBE_INTAKE.md`, or any equivalent intake
-     draft to disk.
-
-3. `NEEDS_CONTEXT`
+2. `NEEDS_CONTEXT`
    - Enter this state when local project inspection, environment inspection, installed
      skills/plugins review, AGENTS/memory review, or external source lookup is needed.
+   - This state is mandatory before any blocking question. Build the project execution
+     index and Codex component index first, even for `mini`.
    - Perform the context action before writing final artifacts.
    - Record evidence from actual files, tool outputs, user answers, or cited sources.
    - Keep temporary intake notes in conversation context only.
    - Do not write a final `FIRST_PROMPT.md` until required context actions are done.
+
+3. `NEEDS_USER_INPUT`
+   - Enter this state only after required project and component indexing has completed.
+   - Ask only questions whose answers change scope, architecture, data model,
+     external dependency, user-facing behavior, acceptance criteria, permissions, or
+     irreversible operations.
+   - Use Codex's native question/user-input or approval UI. Do not render blocking
+     questions directly in ordinary chat. If the native UI is unavailable in the current
+     surface, stop at this state and report that native question UI is required.
+   - Wait for the user's answer before continuing.
+   - Do not generate final `PRE_VIBE_SPEC.md`, `PROJECT_AGENTS.md`, or `FIRST_PROMPT.md`
+     in this state.
+   - If intake notes are useful, keep them only in the current pre-vibe conversation
+     context. Do not write `INTAKE.md`, `PRE_VIBE_INTAKE.md`, or any equivalent intake
+     draft to disk.
 
 4. `READY_TO_COMPILE`
    - Only now write the three final Markdown artifacts.
@@ -62,7 +72,7 @@ Follow this state machine. Do not skip gates.
      evidence, and confirmed assumptions.
 
 5. `AWAITING_APPROVAL`
-   - Show the user the useful parts of `INIT_AGENTS.md` and `FIRST_PROMPT.md`.
+   - Show the user the useful parts of `PROJECT_AGENTS.md` and `FIRST_PROMPT.md`.
    - Ask for approval before pre-vibe clears context and injects the first prompt.
 
 6. `READY_TO_INJECT`
@@ -76,10 +86,12 @@ Follow this state machine. Do not skip gates.
 
 ## Intensity Profiles
 
-- `mini`: general work, simple writing, small research, tiny changes. Ask up to three
-  blocking questions. Do not scan or fetch by default.
+- `mini`: general work, simple writing, small research, tiny changes. Run mandatory
+  lightweight project/component indexing. Ask up to three blocking questions. Do not
+  fetch by default.
 - `default`: normal research and coding tasks. Ask up to five blocking questions.
-  Perform a light allowlist scan and fetch only when external facts affect execution.
+  Perform a light allowlist scan, index Codex components, and fetch only when external
+  facts affect execution.
 - `architect`: new projects, major refactors, complex research, high-risk reverse or
   deployment work. Ask up to ten blocking questions in staged rounds, with broader
   context acquisition.
@@ -91,9 +103,11 @@ These are workflow intensity profiles, not strict token budgets. Still keep
 
 Use the bundled MCP/tools when available:
 
-- `classify_intake` for routing and workflow state.
+- `classify_intake` for routing, mandatory project/component indexing, component
+  suggestions, and workflow state.
 - `scan_project_safe` for allowlist project scanning.
-- `inspect_codex_environment` for AGENTS, marketplace, plugin cache, and Codex setup.
+- `inspect_codex_environment` for AGENTS, installed Codex components/plugins/skills,
+  slash prompt files, marketplace, plugin cache, and Codex setup.
 - `write_pre_vibe_artifacts` only to write LLM-authored content, never to generate prose.
 
 Safe scan defaults:
@@ -111,6 +125,8 @@ External lookup:
   compliance/security facts, or competitor/source evidence.
 - Prefer official or primary sources when accuracy matters.
 - Write a source map; do not paste long source summaries into `FIRST_PROMPT.md`.
+- If the project lacks a relevant Codex component/skill/plugin, use search-backed
+  context expansion or explicit user confirmation before recommending installation.
 
 Reverse or desktop target tasks:
 
@@ -141,15 +157,17 @@ Must include:
 - Functional and non-functional requirements.
 - Acceptance criteria.
 - Project/environment evidence with file paths and why each matters.
+- Codex component recommendations: what installed component should be used, what is
+  missing, and what should be searched or installed before execution if necessary.
 - Assumptions and unresolved unknowns.
 - Practical suggestions, next steps, risk notes, and verification plan.
-- Path guidance explaining which files are handbook/reference files and which file is
-  meant for injection.
+- Path guidance for project files and references relevant to the task. Do not mention
+  the generated agent-guidance filename or path in this handbook.
 
 Use the user's language. Be clear enough for a junior builder to understand what will
 happen and why.
 
-### `INIT_AGENTS.md`
+### `PROJECT_AGENTS.md`
 
 Audience: Codex or another coding agent.
 
@@ -163,7 +181,8 @@ Must include only durable project guidance:
   AGENTS.md. If a useful project rule might conflict, rewrite it as subordinate to the
   global rule or omit it.
 
-Do not include one-off task details, tutorial prose, user education, or long rationale.
+Do not include one-off task details, tutorial prose, user education, long rationale, or
+the generated handbook filename/path.
 
 ### `FIRST_PROMPT.md`
 
@@ -180,8 +199,8 @@ Must include only:
 - Operating mode: start with a short plan, read only relevant files, ask only blocking
   questions, prefer the smallest safe action, and report verification.
 
-Do not include the full spec, brainstorming history, scan logs, long source summaries,
-artifact path instructions, or user-facing tutorial prose.
+Do not include the full handbook, brainstorming history, scan logs, long source
+summaries, artifact path instructions, or user-facing tutorial prose.
 
 ## Final Handoff
 
