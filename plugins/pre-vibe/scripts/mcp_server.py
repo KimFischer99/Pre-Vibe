@@ -206,6 +206,7 @@ def tool_schema() -> list[dict[str, Any]]:
 
 
 def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    payload: Any
     if name == "prepare_project_start":
         payload = prepare_project_start(
             arguments["task"],
@@ -215,7 +216,7 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             language=arguments.get("language", "auto"),
             scan=bool(arguments.get("scan", True)),
         )
-        return text_result(payload, payload["user_visible_status"])
+        return text_result(payload, str(payload["user_visible_status"]))
     if name == "get_pre_vibe_settings":
         payload = get_pre_vibe_settings(Path(arguments.get("project", ".")))
         return text_result(payload, "正在读取 Pre-Vibe 设置。")
@@ -308,6 +309,7 @@ def handle(request: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def main() -> int:
+    response: dict[str, Any] | None
     for line in sys.stdin:
         if not line.strip():
             continue

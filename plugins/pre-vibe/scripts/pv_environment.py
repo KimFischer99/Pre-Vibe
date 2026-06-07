@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
-import re
 from pathlib import Path
 
 from pv_models import CodexEnvironment
@@ -13,7 +11,7 @@ from pv_scan import collect_skill_names, find_global_agents
 try:
     import tomllib
 except ModuleNotFoundError:  # pragma: no cover - Python < 3.11 fallback.
-    tomllib = None
+    tomllib = None  # type: ignore[assignment]
 
 
 def collect_configured_plugins(config_path: Path) -> list[str]:

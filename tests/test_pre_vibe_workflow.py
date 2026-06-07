@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-import os
 import sys
 import tempfile
 import unittest
@@ -52,7 +50,6 @@ from pv_scan import (  # noqa: E402
     detect_existing_context,
     is_secret_like,
     safe_walk,
-    summarize_agents,
 )
 from pv_artifacts import (  # noqa: E402
     validate_artifact_contents,
