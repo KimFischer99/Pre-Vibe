@@ -95,7 +95,6 @@ pre-vibe/
 │   └── workflows/ci.yml
 ├── docs/
 │   ├── installation.md
-│   ├── privacy.md
 │   ├── quickstart.md
 │   ├── troubleshooting.md
 │   └── workflow.md
@@ -118,7 +117,7 @@ pre-vibe/
 - [快速开始](docs/quickstart.md)
 - [工作流契约](docs/workflow.md)
 - [故障排查](docs/troubleshooting.md)
-- [隐私](PRIVACY.md)
+- [隐私与安全](PRIVACY.md)
 
 ## 开发检查
 

@@ -95,7 +95,6 @@ pre-vibe/
 │   └── workflows/ci.yml
 ├── docs/
 │   ├── installation.md
-│   ├── privacy.md
 │   ├── quickstart.md
 │   ├── troubleshooting.md
 │   └── workflow.md
@@ -118,7 +117,7 @@ pre-vibe/
 - [Quickstart](docs/quickstart.md)
 - [Workflow contract](docs/workflow.md)
 - [Troubleshooting](docs/troubleshooting.md)
-- [Privacy](PRIVACY.md)
+- [Privacy & Security](PRIVACY.md)
 
 ## Development Checks
 
