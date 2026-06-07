@@ -48,6 +48,7 @@ def load_pre_vibe_settings(project_root: Path) -> PreVibeSettings:
         default_intensity=default_intensity,
         allow_auto_upgrade=bool(payload.get("allow_auto_upgrade", True)),
         architect_project_index=bool(payload.get("architect_project_index", True)),
+        inspect_codex_environment=bool(payload.get("inspect_codex_environment", True)),
     )
 
 
@@ -74,6 +75,7 @@ def update_pre_vibe_settings(
     default_intensity: str | None = None,
     allow_auto_upgrade: bool | None = None,
     architect_project_index: bool | None = None,
+    inspect_codex_environment: bool | None = None,
 ) -> dict[str, Any]:
     settings = load_pre_vibe_settings(project_root)
     if default_intensity is not None:
@@ -82,6 +84,8 @@ def update_pre_vibe_settings(
         settings.allow_auto_upgrade = bool(allow_auto_upgrade)
     if architect_project_index is not None:
         settings.architect_project_index = bool(architect_project_index)
+    if inspect_codex_environment is not None:
+        settings.inspect_codex_environment = bool(inspect_codex_environment)
     return save_pre_vibe_settings(project_root, settings)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "pre-vibe",
-  "version": "0.6.0",
+  "version": "0.1.1",
   "description": "Codex workflow plugin that turns rough first-session requests into project-specific starting context, handbook guidance, and a compact first prompt.",
   "author": {
     "name": "Kim Fischer",

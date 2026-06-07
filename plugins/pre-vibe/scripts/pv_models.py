@@ -187,6 +187,7 @@ class PreVibeSettings:
     default_intensity: str = "auto"
     allow_auto_upgrade: bool = True
     architect_project_index: bool = True
+    inspect_codex_environment: bool = True
     session_intensity: str | None = None
 
 

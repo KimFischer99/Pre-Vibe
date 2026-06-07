@@ -1,5 +1,8 @@
 # Pre-Vibe
 
+[![Version](https://img.shields.io/badge/version-v0.1.1-brightgreen)](CHANGELOG.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Pre-Vibe is a Codex plugin for preparing a new session before real work begins. It turns a rough first message into project-specific starting context, guided questions, AGENTS.md-compatible guidance, and a compact execution prompt.
 
 It is designed for new Codex users, junior builders, and early product sessions where the first request is short, vague, or missing execution detail. Pre-Vibe reads safe project context, checks Codex guidance, asks only blocking questions, writes starting documents, and hands Codex a concise first prompt after approval.
@@ -55,6 +58,7 @@ Settings available through the plugin:
 - session effort override
 - architect-only project index toggle
 - auto-upgrade behavior
+- Codex environment inspection toggle
 
 ## Workflow
 
@@ -66,7 +70,10 @@ Pre-Vibe follows a session-start workflow:
 4. Ask native UI questions for unresolved blocking decisions.
 5. Capture local and online evidence for `PRE_VIBE_SPEC.md`.
 6. Build customized starting documents.
-7. Clear the working context and hand off through `FIRST_PROMPT.md`.
+7. Ask the user to approve the `FIRST_PROMPT.md` handoff.
+8. After approval, read and inject `FIRST_PROMPT.md` as the execution contract.
+
+Document generation is preparation, not completion. A Pre-Vibe run is only complete after the user approves the handoff and Codex continues from `FIRST_PROMPT.md`, or after the user explicitly cancels.
 
 ## Architecture
 
@@ -80,11 +87,44 @@ The plugin package lives in `plugins/pre-vibe/` and includes:
 
 The MCP server returns short user-visible status text and structured workflow data for Codex. The Python layer provides deterministic routing, validation, scanning, settings, and safe writing; Codex authors the final task-specific Markdown.
 
+## File Structure
+
+```text
+pre-vibe/
+├── .agents/plugins/marketplace.json
+├── docs/
+│   ├── installation.md
+│   ├── privacy.md
+│   ├── quickstart.md
+│   ├── troubleshooting.md
+│   └── workflow.md
+├── plugins/pre-vibe/
+│   ├── .codex-plugin/plugin.json
+│   ├── .mcp.json
+│   ├── README.md
+│   ├── scripts/
+│   └── skills/pre-vibe-workflow/SKILL.md
+├── tests/
+├── CHANGELOG.md
+├── CONTRIBUTING.md
+├── PRIVACY.md
+└── README.md
+```
+
+## Documentation
+
+- [Installation](docs/installation.md)
+- [Quickstart](docs/quickstart.md)
+- [Workflow contract](docs/workflow.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Privacy](PRIVACY.md)
+
 ## Development Checks
 
 ```bash
 python3 ~/.codex/skills/.system/plugin-creator/scripts/validate_plugin.py plugins/pre-vibe
 python3 -m py_compile plugins/pre-vibe/scripts/*.py
+python3 -m unittest discover -s tests
 codex review --uncommitted
 ```
 

@@ -16,6 +16,21 @@ This skill is bundled with the Pre-Vibe plugin as workflow guidance for Codex. U
 5. Every blocking question must include why it matters and the recommended answer.
 6. Keep `PRE_VIBE_SPEC.md`, `AGENTS.md` or `PROJECT_AGENTS.md`, and `PROJECT_INDEX.md` independent from each other; `FIRST_PROMPT.md` may reference the files needed for handoff.
 7. Treat online references as evidence for `PRE_VIBE_SPEC.md`; keep `FIRST_PROMPT.md` compact.
+8. Never stop after `write_project_starting_documents`. Document writing moves the workflow to approval, not completion.
+9. After documents are written, immediately ask the user to approve the `FIRST_PROMPT.md` handoff.
+10. After approval, read `FIRST_PROMPT.md` and continue from it as the active execution contract. Do not summarize the generated documents as the final answer.
+
+## Mandatory Sequence
+
+The plugin startup workflow must follow this order:
+
+1. `prepare_project_start`
+2. `open_question_dialog` when `question_request` is present
+3. `write_project_starting_documents`
+4. request user approval for the `FIRST_PROMPT.md` handoff
+5. read and inject `FIRST_PROMPT.md` as the next execution contract after approval
+
+If Codex cannot open native question UI, pause and report that the UI is unavailable. If the user rejects the handoff, stop and ask what should change. The Pre-Vibe run is complete only when the handoff is approved and `FIRST_PROMPT.md` has been used, or when the user explicitly cancels.
 
 ## Document Contract
 

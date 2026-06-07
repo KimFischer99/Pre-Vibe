@@ -376,6 +376,7 @@ def context_actions_for(
     intensity: str,
     project_context: ProjectContext | None = None,
     codex_environment: CodexEnvironment | None = None,
+    inspect_codex_environment_enabled: bool = True,
 ) -> list[ContextAction]:
     profile = INTENSITY_PROFILES[intensity]
     actions: list[ContextAction] = []
@@ -387,7 +388,7 @@ def context_actions_for(
                 "Build a safe project execution index before asking blocking questions.",
             )
         )
-    if not codex_environment:
+    if inspect_codex_environment_enabled and not codex_environment:
         actions.append(
             ContextAction(
                 "codex_component_index",
@@ -501,12 +502,15 @@ def route_intake(
     project_context: ProjectContext | None = None
     if scan and profile.allow_default_scan:
         project_context = safe_walk(project_root, profile.max_scanned_files, selected_scenario)
-    codex_environment = inspect_codex_environment()
-    suggestions, missing_suggestions = component_suggestions_for(
-        task,
-        selected_scenario,
-        codex_environment,
-    )
+    codex_environment = inspect_codex_environment() if settings.inspect_codex_environment else None
+    if codex_environment:
+        suggestions, missing_suggestions = component_suggestions_for(
+            task,
+            selected_scenario,
+            codex_environment,
+        )
+    else:
+        suggestions, missing_suggestions = [], []
     questions = recovery_questions_for(project_context, selected_language)
     questions.extend(blocking_questions_for(task, selected_scenario, selected_intensity, selected_language))
     questions = questions[: profile.max_questions]
@@ -516,6 +520,7 @@ def route_intake(
         selected_intensity,
         project_context,
         codex_environment,
+        settings.inspect_codex_environment,
     )
     evidence = list(evidence_refs or [])
     evidence_ids = {item.id for item in evidence}

@@ -29,7 +29,8 @@ SERVER_INSTRUCTIONS = (
     "Show only short user-facing status text in chat; keep structured workflow fields in structuredContent. "
     "Use native MCP elicitation for blocking questions instead of printing them as ordinary chat. "
     "Write PRE_VIBE_SPEC.md, AGENTS.md or PROJECT_AGENTS.md, and FIRST_PROMPT.md; architect effort may also write PROJECT_INDEX.md. "
-    "Do not write internal intake/status/context fields to disk, and keep output paths inside the active project."
+    "Do not write internal intake/status/context fields to disk, and keep output paths inside the active project. "
+    "Writing documents is not the end of the workflow: after write_project_starting_documents, request user approval for FIRST_PROMPT.md, then read and inject FIRST_PROMPT.md as the execution contract when approved."
 )
 
 
@@ -63,7 +64,7 @@ def tool_schema() -> list[dict[str, Any]]:
     return [
         {
             "name": "prepare_project_start",
-            "description": "First step for Pre-Vibe. Read safe project/Codex context, choose effort level, and return the next workflow action. If structuredContent.question_request is present, call open_question_dialog before writing documents. Do not print structured fields in chat.",
+            "description": "First step for Pre-Vibe. Read safe project/Codex context, choose effort level, and return the mandatory workflow contract. If structuredContent.question_request is present, call open_question_dialog before writing documents. Do not print structured fields in chat.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -112,6 +113,7 @@ def tool_schema() -> list[dict[str, Any]]:
                     },
                     "allow_auto_upgrade": {"type": "boolean"},
                     "architect_project_index": {"type": "boolean"},
+                    "inspect_codex_environment": {"type": "boolean"},
                 },
             },
         },
@@ -169,11 +171,16 @@ def tool_schema() -> list[dict[str, Any]]:
         {
             "name": "inspect_codex_environment",
             "description": "Inspect Codex AGENTS, installed standalone skills, plugin cache, enabled plugins, and personal marketplace state.",
-            "inputSchema": {"type": "object", "properties": {}},
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "project": {"type": "string", "default": "."},
+                },
+            },
         },
         {
             "name": "write_project_starting_documents",
-            "description": "Final Pre-Vibe write step. Write only Codex-authored, task-specific project starting documents after required context and user answers are available. Does not generate prose.",
+            "description": "Pre-Vibe document write step. Write only Codex-authored, task-specific project starting documents after required context and user answers are available. This is not the final workflow step: after the tool returns, request user approval for FIRST_PROMPT.md and inject it after approval. Does not generate prose.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -295,6 +302,7 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             default_intensity=arguments.get("default_intensity"),
             allow_auto_upgrade=arguments.get("allow_auto_upgrade"),
             architect_project_index=arguments.get("architect_project_index"),
+            inspect_codex_environment=arguments.get("inspect_codex_environment"),
         )
         return text_result(payload, "Pre-Vibe 设置已更新。")
     if name == "set_pre_vibe_intensity":
@@ -321,6 +329,15 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
         )
         return text_result(payload, "正在读取项目结构。")
     if name == "inspect_codex_environment":
+        settings = get_pre_vibe_settings(Path(arguments.get("project", ".")))
+        if not settings.get("inspect_codex_environment", True):
+            return text_result(
+                {
+                    "inspection_enabled": False,
+                    "notes": ["Codex environment inspection is disabled for this project."],
+                },
+                "此项目已关闭 Codex 环境读取。",
+            )
         return text_result(inspect_codex_environment(), "正在读取 Codex 环境。")
     if name == "write_project_starting_documents":
         payload = write_artifacts(
@@ -329,7 +346,7 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             project_root=Path(arguments.get("project_root", ".")),
             allow_project_index=arguments.get("intensity") == "architect",
         )
-        return text_result(payload, "项目初始文档已构建。")
+        return text_result(payload, "项目初始文档已构建，正在等待交接确认。")
     raise ValueError(f"unknown tool: {name}")
 
 
@@ -345,7 +362,7 @@ def handle(request: dict[str, Any]) -> dict[str, Any] | None:
             "result": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {"tools": {}},
-                "serverInfo": {"name": "pre-vibe", "version": "0.6.0"},
+                "serverInfo": {"name": "pre-vibe", "version": "0.1.1"},
                 "instructions": SERVER_INSTRUCTIONS,
             },
         }

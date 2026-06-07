@@ -7,6 +7,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from pv_models import AWAITING_APPROVAL
+
 
 ARTIFACT_FILENAMES = {
     "spec": "PRE_VIBE_SPEC.md",
@@ -15,6 +17,12 @@ ARTIFACT_FILENAMES = {
     "prompt": "FIRST_PROMPT.md",
     "project_index": "PROJECT_INDEX.md",
 }
+
+HANDOFF_REQUIRED_NEXT_ACTIONS = [
+    "Ask the user to approve the handoff from FIRST_PROMPT.md.",
+    "After approval, read FIRST_PROMPT.md and continue from its execution contract.",
+    "Treat document generation as preparation only; do not end the Pre-Vibe run after writing files.",
+]
 
 
 def estimate_tokens(text: str) -> int:
@@ -77,13 +85,26 @@ def ensure_output_dir_inside_project(output_dir: Path, project_root: Path | None
     return resolved_output
 
 
+def handoff_contract(written: dict[str, str]) -> dict[str, Any]:
+    if "prompt" not in written:
+        raise ValueError("handoff requires FIRST_PROMPT.md")
+    return {
+        "workflow_state": AWAITING_APPROVAL,
+        "handoff_file": written["prompt"],
+        "approval_request": "Please review the generated starting documents. Approve the FIRST_PROMPT.md handoff so Codex can continue from it.",
+        "required_next_actions": HANDOFF_REQUIRED_NEXT_ACTIONS,
+        "document_generation_is_complete": True,
+        "pre_vibe_run_is_complete": False,
+    }
+
+
 def write_artifacts(
     output_dir: Path,
     contents: dict[str, str],
     status: dict[str, Any] | None = None,
     project_root: Path | None = None,
     allow_project_index: bool = True,
-) -> dict[str, str]:
+) -> dict[str, Any]:
     if status is not None:
         raise ValueError("status is internal context and must not be written to disk")
     output_dir = ensure_output_dir_inside_project(output_dir, project_root)
@@ -97,4 +118,7 @@ def write_artifacts(
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(redact_secret_like(text).rstrip() + "\n", encoding="utf-8")
         written[key] = str(path.relative_to(output_dir))
-    return written
+    return {
+        "written": written,
+        "handoff": handoff_contract(written),
+    }

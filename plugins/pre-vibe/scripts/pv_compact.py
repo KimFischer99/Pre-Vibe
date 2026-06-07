@@ -71,6 +71,17 @@ def compact_decision(decision: IntakeDecision) -> dict[str, Any]:
         payload = asdict(item)
         payload["source"] = redact_path_for_context(item.source, project_root) or item.source
         evidence_buffer.append(payload)
+    workflow_contract = {
+        "required_order": [
+            "prepare_project_start",
+            "open_question_dialog when question_request is present",
+            "write_project_starting_documents after required answers and evidence are available",
+            "request user approval for FIRST_PROMPT.md handoff",
+            "after approval, read and inject FIRST_PROMPT.md as the execution contract",
+        ],
+        "document_generation_is_not_completion": True,
+        "completion_condition": "Pre-Vibe is complete only after the FIRST_PROMPT.md handoff is approved and used, or the user explicitly cancels.",
+    }
     return {
         "state": decision.state,
         "scenario": decision.scenario,
@@ -95,5 +106,6 @@ def compact_decision(decision: IntakeDecision) -> dict[str, Any]:
         "agent_guidance_mode": decision.agent_guidance_mode,
         "recovery_action": decision.recovery_action,
         "question_request": native_question_payload(decision),
+        "workflow_contract": workflow_contract,
         "user_visible_status": visible_status_for_state(decision.state, decision.language),
     }
