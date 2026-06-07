@@ -61,7 +61,7 @@ def tool_schema() -> list[dict[str, Any]]:
     return [
         {
             "name": "prepare_project_start",
-            "description": "First step for Pre-Vibe. Read safe project/Claude Code context, choose effort level, and return the mandatory workflow contract. If structuredContent.question_request is present, call open_question_dialog before writing documents. Do not print structured fields in chat.",
+            "description": "First step for Pre-Vibe. Read safe project/Claude Code context, choose effort level, and return the mandatory workflow contract. If structuredContent.question_request is present, Claude Code opens native question UI automatically. Do not print structured fields in chat.",
             "inputSchema": {
                 "type": "object",
                 "properties": {

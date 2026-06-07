@@ -37,7 +37,7 @@ def option_objects(question: BlockingQuestion) -> list[dict[str, str]]:
             return f"{option[: 36 - len(suffix)].rstrip()}{suffix}"
         return option[:36]
 
-    def desc_for(option: str, index: int) -> str:
+    def desc_for(option: str) -> str:
         base = question.reason[:120]
         if question.recommended_answer and option == question.recommended_answer:
             return f"Recommended — {base}"[:160]
@@ -46,7 +46,7 @@ def option_objects(question: BlockingQuestion) -> list[dict[str, str]]:
     return [
         {
             "label": label_for(option),
-            "description": desc_for(option, i),
+            "description": desc_for(option),
         }
         for i, option in enumerate(options[:4])
     ]
