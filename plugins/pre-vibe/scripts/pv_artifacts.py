@@ -19,10 +19,49 @@ ARTIFACT_FILENAMES = {
 }
 
 HANDOFF_REQUIRED_NEXT_ACTIONS = [
-    "Ask the user to review and approve FIRST_PROMPT.md. Explain that after approval, the next steps are: /clear → inject FIRST_PROMPT.md as execution contract.",
-    "After approval, ask the user to run /clear to reset context, then read and inject FIRST_PROMPT.md.",
+    "Present FIRST_PROMPT.md for user review using AskUserQuestion. The approval_question field in the handoff contract provides the structured question payload.",
+    "When the user selects 'Approve and begin' or 'Approve (开始工作)': execute /clear, then read FIRST_PROMPT.md and continue from its execution contract.",
+    "When the user selects 'Adjust scope' or 'Regenerate': stop and ask what to change before regenerating.",
     "Treat document generation as preparation only; do not end the Pre-Vibe run after writing files.",
 ]
+
+APPROVAL_QUESTION_ZH = {
+    "header": "审核交接",
+    "question": "FIRST_PROMPT.md 已生成。请审核执行合约，确认后我将执行 /clear 并注入合约开始工作。",
+    "options": [
+        {
+            "label": "确认交接 (Approve)",
+            "description": "执行合约符合预期，执行 /clear 清空上下文并注入 FIRST_PROMPT.md，立即开始工作。"
+        },
+        {
+            "label": "调整范围/深度",
+            "description": "需求基本正确，但需要调整某些部分（章节、侧重点、交付标准等）。告诉我需要改什么。"
+        },
+        {
+            "label": "重新生成",
+            "description": "执行合约偏差较大，从当前任务描述重新生成全部文档。"
+        },
+    ],
+}
+
+APPROVAL_QUESTION_EN = {
+    "header": "Approve Handoff",
+    "question": "FIRST_PROMPT.md has been generated. Review the execution contract, then I'll run /clear and inject it to begin work.",
+    "options": [
+        {
+            "label": "Approve & begin work",
+            "description": "The contract matches expectations. Execute /clear, inject FIRST_PROMPT.md, and start implementation immediately."
+        },
+        {
+            "label": "Adjust scope/depth",
+            "description": "The direction is right but specific sections, priorities, or delivery criteria need adjustment. Tell me what to change."
+        },
+        {
+            "label": "Regenerate all docs",
+            "description": "The contract missed the mark significantly. Regenerate all documents from the current task description."
+        },
+    ],
+}
 
 
 def estimate_tokens(text: str) -> int:
@@ -85,7 +124,7 @@ def handoff_contract(written: dict[str, str]) -> dict[str, Any]:
     return {
         "workflow_state": AWAITING_APPROVAL,
         "handoff_file": written["prompt"],
-        "approval_request": "Please review FIRST_PROMPT.md. Approve if it meets your expectations. After approval, the next step will be /clear (reset context) then inject FIRST_PROMPT.md as the execution contract for Claude Code.",
+        "approval_question": APPROVAL_QUESTION_ZH,
         "required_next_actions": HANDOFF_REQUIRED_NEXT_ACTIONS,
         "document_generation_is_complete": True,
         "pre_vibe_run_is_complete": False,

@@ -292,9 +292,9 @@ def blocking_questions_for(task: str, scenario: str, intensity: str, language: s
                     if zh
                     else "Provide the target's absolute path, file/app name, type, and confirm you are authorized to analyze it."
                 ),
-                "The target and authorization determine whether any reverse-analysis workflow is allowed.",
-                ["提供路径和授权确认", "仅做通用方法说明", "暂停逆向任务"] if zh else ["Provide path and authorization", "General method only", "Pause reverse task"],
-                "提供路径和授权确认" if zh else "Provide path and authorization",
+                "Target path and authorization determine whether reverse-analysis can proceed. Without this, only general methodology is possible.",
+                ["提供路径和授权，开始分析", "只做通用方法论说明", "暂停，稍后提供"] if zh else ["Provide path & authorization, begin analysis", "General methodology only", "Pause, I'll provide details later"],
+                "提供路径和授权，开始分析" if zh else "Provide path & authorization, begin analysis",
             )
         )
     if scenario in {"coding", "mixed"} and looks_like_new_product_task(task):
@@ -307,9 +307,9 @@ def blocking_questions_for(task: str, scenario: str, intensity: str, language: s
                     if zh
                     else "What is the core user flow for this version? In one sentence: what does the user input, what does the system process, and what is the final output?"
                 ),
-                "The core flow determines product scope, UI states, data handling, and acceptance criteria.",
-                ["一句话说明核心流程", "由现有文档推断", "先做最小可运行流程"] if zh else ["Describe the core flow", "Infer from docs", "Start with the smallest runnable flow"],
-                "先做最小可运行流程" if zh else "Start with the smallest runnable flow",
+                "The core flow determines product scope, UI design, data handling, and what 'done' looks like for this round.",
+                ["输入→处理→输出，一句话说清", "从已有文档推断", "先做可运行的最小原型"] if zh else ["Input → process → output in one sentence", "Infer from existing project docs", "Start with smallest runnable prototype"],
+                "先做可运行的最小原型" if zh else "Start with smallest runnable prototype",
             )
         )
         if any(term in task.lower() for term in ("ai", "简历", "resume", "upload", "上传", "用户", "账号")):
@@ -322,9 +322,9 @@ def blocking_questions_for(task: str, scenario: str, intensity: str, language: s
                         if zh
                         else "Does this round need accounts, file upload/storage, or a third-party AI API, or should it stay a local/demo flow?"
                     ),
-                    "Data, accounts, and AI dependencies change security, privacy, implementation, and verification.",
-                    ["本地/演示版", "需要上传/存储", "需要账号或第三方 API"] if zh else ["Local/demo only", "Needs upload/storage", "Needs account or API"],
-                    "本地/演示版" if zh else "Local/demo only",
+                    "Data persistence, user accounts, and external API calls each add significant engineering complexity and change the implementation approach.",
+                    ["本地演示版，无外部依赖", "需要文件上传/存储", "需要用户账号或第三方 API"] if zh else ["Local demo — no external dependencies", "Needs file upload/storage", "Needs user accounts or external API"],
+                    "本地演示版，无外部依赖" if zh else "Local demo — no external dependencies",
                 )
             )
         questions.append(
@@ -336,9 +336,9 @@ def blocking_questions_for(task: str, scenario: str, intensity: str, language: s
                     if zh
                     else "Should this round deliver a clickable prototype, runnable MVP, or production-deployable version?"
                 ),
-                "The delivery level changes implementation depth and validation.",
-                ["可运行 MVP", "可点击原型", "生产可部署版本"] if zh else ["Runnable MVP", "Clickable prototype", "Production-deployable"],
-                "可运行 MVP" if zh else "Runnable MVP",
+                "The delivery level determines implementation depth, error handling, testing rigor, and how much engineering quality is needed.",
+                ["可运行 MVP — 核心功能可用", "可点击原型 — 验证交互流程", "生产部署版本 — 完整工程质量"] if zh else ["Runnable MVP — core features working", "Clickable prototype — validate UX flow", "Production-deployable — full engineering quality"],
+                "可运行 MVP — 核心功能可用" if zh else "Runnable MVP — core features working",
             )
         )
     if scenario == "research" and intensity != "mini":
@@ -351,9 +351,9 @@ def blocking_questions_for(task: str, scenario: str, intensity: str, language: s
                     if zh
                     else "What decision should this research support: tool choice, market judgment, competitor comparison, or implementation plan?"
                 ),
-                "The decision determines source selection and output structure.",
-                ["实施方案", "选型判断", "竞品/市场比较"] if zh else ["Implementation plan", "Tool choice", "Market/competitor comparison"],
-                "实施方案" if zh else "Implementation plan",
+                "The type of decision determines which sources matter, how deep to go, and what format the output should take.",
+                ["实施方案 — 给我可执行的步骤", "技术选型 — 比较并推荐方案", "竞品/市场比较 — 提供对比分析"] if zh else ["Implementation plan — give me executable steps", "Tool/framework choice — compare and recommend", "Market/competitor comparison — provide analysis"],
+                "实施方案 — 给我可执行的步骤" if zh else "Implementation plan — give me executable steps",
             )
         )
     if scenario in {"coding", "mixed"} and ("deploy" in task.lower() or "部署" in task):
@@ -362,9 +362,9 @@ def blocking_questions_for(task: str, scenario: str, intensity: str, language: s
                 "deployment_boundary",
                 "部署权限" if zh else "Deploy",
                 "本轮是否允许真实部署，还是只准备部署方案和本地验证？" if zh else "Is live deployment allowed, or should this only prepare a deployment plan and local verification?",
-                "Deployment permissions change risk, approvals, and verification.",
-                ["只准备方案和本地验证", "允许真实部署", "先询问每个部署动作"] if zh else ["Plan and local verify only", "Live deploy allowed", "Ask before each deploy action"],
-                "只准备方案和本地验证" if zh else "Plan and local verify only",
+                "Deployment changes risk profile: live deploys affect real environments, while plan-only keeps work safely contained.",
+                ["只准备方案，本地验证", "允许真实部署到线上", "每个部署操作前询问"] if zh else ["Plan only — local verification", "Live deploy to production allowed", "Ask before each deploy action"],
+                "只准备方案，本地验证" if zh else "Plan only — local verification",
             )
         )
     return questions[: profile.max_questions]
@@ -421,7 +421,8 @@ def artifact_rules_for(language: str) -> list[str]:
         return [
             "三份 Markdown 必须围绕用户任务和项目证据定制写作。",
             "最终产物不得出现 pre-vibe、插件实现、MCP server 或 workflow 内部表述，除非用户任务本身就是开发该工具。",
-            "PRE_VIBE_SPEC.md 面向初级用户，是项目 handbook；必须包含 Project Language 和 Evidence。",
+            "PRE_VIBE_SPEC.md 是工程执行手册，不是背景知识百科。必须包含：环境变量、语言/框架栈、已安装插件和 skills、项目组件清单、git 状态、过往 session 上下文、文件结构指针、可执行的组件使用和集成建议。回避通用技术科普和行业背景介绍。",
+            'PRE_VIBE_SPEC.md 中的每条建议都必须是可执行的工程决策。优先写“使用已安装的 X 组件做 Y”，而非“X 是流行的 Y 工具”。',
             "CLAUDE.md 或 PROJECT_CLAUDE.md 面向 Claude Code；只保留执行规则、约束、文件指针、验收标准和必要操作边界。",
             "CLAUDE.md / PROJECT_CLAUDE.md 必须参考全局 CLAUDE.md；不得加入与全局指令冲突或削弱全局指令的规则。",
             "FIRST_PROMPT.md 必须是 execution contract，包含 Completion Contract、停止询问条件和验证要求。",
@@ -434,7 +435,8 @@ def artifact_rules_for(language: str) -> list[str]:
     return [
         "All three Markdown files must be custom-written from the user's task and project evidence.",
         "Final artifacts must not mention pre-vibe, plugin implementation, MCP server, or workflow internals unless the user is building this tool.",
-        "PRE_VIBE_SPEC.md is a beginner-friendly handbook and must include Project Language and Evidence sections.",
+        "PRE_VIBE_SPEC.md is an engineering execution handbook, NOT a background knowledge encyclopedia. It must contain: env vars, language/framework stack, installed plugins & skills, project component inventory, git state, past session context, file structure pointers, and actionable integration suggestions. Avoid generic tech introductions or industry overviews.",
+        "Every suggestion in PRE_VIBE_SPEC.md must be an actionable engineering decision. Prefer 'Use the installed X component for Y' over 'X is a popular tool for Y'.",
         "CLAUDE.md or PROJECT_CLAUDE.md is agent-facing and should contain only execution rules, constraints, file pointers, acceptance criteria, and necessary operation boundaries.",
         "CLAUDE.md / PROJECT_CLAUDE.md must account for global CLAUDE.md and must not conflict with or weaken global instructions.",
         "FIRST_PROMPT.md must be an execution contract with Completion Contract, stop/ask conditions, and verification requirements.",

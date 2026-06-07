@@ -23,7 +23,7 @@ def clean_header(value: str, fallback: str = "Question") -> str:
 
 
 def option_objects(question: BlockingQuestion) -> list[dict[str, str]]:
-    options = list(question.options[:3])
+    options = list(question.options[:4])
     if len(options) < 2:
         options.extend(["Use best default", "Ask later"][len(options) :])
     if question.recommended_answer and question.recommended_answer in options:
@@ -37,16 +37,18 @@ def option_objects(question: BlockingQuestion) -> list[dict[str, str]]:
             return f"{option[: 36 - len(suffix)].rstrip()}{suffix}"
         return option[:36]
 
+    def desc_for(option: str, index: int) -> str:
+        base = question.reason[:120]
+        if question.recommended_answer and option == question.recommended_answer:
+            return f"Recommended — {base}"[:160]
+        return f"{base}"[:160] or "Choose this option to continue."
+
     return [
         {
             "label": label_for(option),
-            "description": (
-                f"Recommended default. {question.reason}"
-                if question.recommended_answer and option == question.recommended_answer
-                else question.reason
-            )[:160] or "Choose this option to continue.",
+            "description": desc_for(option, i),
         }
-        for option in options[:3]
+        for i, option in enumerate(options[:4])
     ]
 
 

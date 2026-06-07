@@ -9,40 +9,41 @@ Pre-Vibe turns a rough first request into **three structured documents** before 
 
 ---
 
-## One-Click Install
+## Quick Install
 
-In Claude Code, type:
+Tell Claude Code:
 
 ```
-帮我安装一下这个 plugin：KimFischer99/CC-Pre-Vibe
+请帮我安装这个 plugin：https://github.com/KimFischer99/CC-Pre-Vibe
 ```
 
-Or install manually:
+Or install manually in three steps:
 
 ```bash
-# 1. Add the marketplace (one-time)
+# Step 1: Register the marketplace (do this once)
 claude plugin marketplace add https://raw.githubusercontent.com/KimFischer99/CC-Pre-Vibe/main/.claude-plugin/marketplace.json
 
-# 2. Enable auto-update
+# Step 2: Enable auto-update for this marketplace
 claude plugin marketplace auto-update --enable pre-vibe
 
-# 3. Install the plugin
+# Step 3: Install the plugin
 claude plugin install pre-vibe@pre-vibe
 ```
 
-Restart Claude Code, type `/pre-vibe`, and tell it your rough idea.
+> **Note:** This plugin uses a **self-hosted marketplace** (not the default Claude Code marketplace). You must complete Step 1 before Step 3. If `claude plugin install pre-vibe` fails with "not found", run Steps 1–3 in order.
+
+After installation, restart Claude Code, type `/pre-vibe`, and tell it your rough idea.
 
 ---
 
-## Quick Start (3 Minutes)
+## Quick Start
 
-| Step | What happens |
-|------|-------------|
-| **1.** Type `/pre-vibe` in Claude Code | Plugin activates |
-| **2.** Say your rough idea | e.g. "Help me turn this idea into a build plan" |
-| **3.** Answer 2-5 questions | Claude Code opens native question dialogs |
-| **4.** Review the generated docs | Three files appear in your project |
-| **5.** Approve the handoff | `/clear` → inject FIRST_PROMPT.md → real work begins |
+| Step | What you do | What Claude Code does |
+|------|------------|----------------------|
+| **1.** Type `/pre-vibe` | Describe your rough task | Plugin activates and scans your project |
+| **2.** Answer questions | Pick answers in the native question dialogs | Asks only what's needed for scope clarity |
+| **3.** Review documents | Check PRE_VIBE_SPEC.md, CLAUDE.md, FIRST_PROMPT.md | Writes three task-specific files to your project |
+| **4.** Approve the handoff | Confirm FIRST_PROMPT.md meets your expectations | Runs `/clear` → injects FIRST_PROMPT.md → begins real work |
 
 ---
 
@@ -52,8 +53,8 @@ Pre-Vibe writes **three task-specific documents** that together constrain Claude
 
 | Document | What it does | Why it matters |
 |---|---|---|
-| `PRE_VIBE_SPEC.md` | Beginner-friendly project handbook — goals, scope, project language, evidence, risks, acceptance criteria | Aligns Claude Code with your domain terminology and success criteria before a single line of code |
-| `CLAUDE.md` (or `PROJECT_CLAUDE.md`) | Agent-facing execution rules — constraints, file pointers, operation boundaries, verification requirements | Loaded automatically by Claude Code at session start; prevents scope creep and guides every response |
+| `PRE_VIBE_SPEC.md` | Engineering execution handbook — env vars, stack, plugins, skills, component inventory, git state, integration suggestions | Aligns Claude Code with your project reality before a single line of code; focuses on execution, not background knowledge |
+| `CLAUDE.md` (or `PROJECT_CLAUDE.md`) | Agent-facing execution rules — constraints, file pointers, operation boundaries, verification gates | Loaded automatically by Claude Code at session start; prevents scope creep and guides every response |
 | `FIRST_PROMPT.md` | Compact execution contract with Completion Contract, stop/ask conditions, and verification gates | The only prompt after handoff — keeps Claude Code focused on the deliverable, not the setup |
 
 > `PROJECT_INDEX.md` is also available at **architect** effort level for high-uncertainty work.
@@ -70,22 +71,18 @@ These three documents work together to **constrain large-model context, reduce h
 | **default** | ≤ 5 | Normal coding or research tasks |
 | **architect** | ≤ 10 + PROJECT_INDEX.md | New products, refactors, high-uncertainty work |
 
-Adjust anytime through the plugin settings:
-- Default effort: `auto`, `mini`, `default`, `architect`
-- Session effort override
-- Architect-only project index toggle
-- Claude Code environment inspection toggle
+Adjust anytime through the plugin settings, or use the `set_effort_level` tool.
 
 ---
 
 ## How It Works
 
-1. Detects existing context, `CLAUDE.md` files, and git state
-2. Builds a safe project index (skips secrets, `node_modules`, etc.)
-3. Resolves effort level and document plan
-4. Opens native question UI for unresolved decisions
-5. Writes customized starting documents
-6. Requests approval — then `/clear` and inject `FIRST_PROMPT.md` as the execution contract
+1. Detects existing Pre-Vibe documents, `CLAUDE.md` files, env vars, installed plugins/skills, git state, and past session context
+2. Builds a safe project index (skips secrets, node_modules, etc.)
+3. Resolves effort level and document output plan
+4. Opens native question UI for unresolved blocking decisions
+5. Writes customized starting documents focused on engineering execution
+6. Presents FIRST_PROMPT.md for user audit — after explicit approval, `/clear` and inject
 
 ---
 

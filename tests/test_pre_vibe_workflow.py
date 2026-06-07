@@ -797,7 +797,7 @@ class PreVibeWorkflowTests(unittest.TestCase):
         self.assertTrue(
             any("write_project_starting_documents" in step for step in contract["required_order"])
         )
-        self.assertIn("after approval", contract["required_order"][-1])
+        self.assertIn("explicit user approval", contract["required_order"][-1])
 
     def test_write_artifacts_requires_approval_before_completion(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -815,7 +815,7 @@ class PreVibeWorkflowTests(unittest.TestCase):
         self.assertEqual(result["written"]["prompt"], "FIRST_PROMPT.md")
         self.assertEqual(result["handoff"]["workflow_state"], AWAITING_APPROVAL)
         self.assertFalse(result["handoff"]["pre_vibe_run_is_complete"])
-        self.assertIn("review and approve", result["handoff"]["required_next_actions"][0])
+        self.assertIn("Present FIRST_PROMPT", result["handoff"]["required_next_actions"][0])
 
     def test_default_effort_rejects_project_index(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
