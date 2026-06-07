@@ -5,11 +5,12 @@ Pre-Vibe has one job: prepare the first session before implementation starts. Th
 ## Mandatory Order
 
 1. Call `prepare_project_start`.
-2. If `question_request` is present, call `open_question_dialog`.
-3. Build the requested project documents.
-4. Call `write_project_starting_documents`.
-5. Ask the user to approve the `FIRST_PROMPT.md` handoff.
-6. After approval, read and inject `FIRST_PROMPT.md` as the active execution contract.
+2. The result contains `question_request` — Claude Code opens native question UI automatically.
+   Do not call any MCP tool for questions.
+3. Call `write_project_starting_documents`.
+4. Ask the user to review and approve `FIRST_PROMPT.md`.
+   Explain that after approval, the next steps are: `/clear` → inject `FIRST_PROMPT.md`.
+5. After approval, ask the user to run `/clear`, then read and inject `FIRST_PROMPT.md` as the active execution contract.
 
 Claude Code must not stop after writing files. The document write step returns `AWAITING_APPROVAL` and a required handoff contract so the next action is explicit.
 
@@ -17,13 +18,13 @@ Claude Code must not stop after writing files. The document write step returns `
 
 A Pre-Vibe run is complete only when one of these is true:
 
-- The user approves the handoff and Claude Code continues from `FIRST_PROMPT.md`.
+- The user approves the handoff, runs `/clear`, and Claude Code continues from `FIRST_PROMPT.md`.
 - The user rejects the handoff and gives a correction.
 - The user explicitly cancels Pre-Vibe.
 
 ## Native Question UI
 
-Blocking questions must use Claude Code native question UI through `open_question_dialog`. If the UI is unavailable, Claude Code should pause and report that it cannot continue safely instead of printing internal backend fields as chat text.
+Blocking questions are returned as structured `question_request` in the `prepare_project_start` result. Claude Code opens the native question UI automatically. If the UI is unavailable, Claude Code should pause and report that it cannot continue safely instead of printing internal backend fields as chat text.
 
 ## Document Independence
 

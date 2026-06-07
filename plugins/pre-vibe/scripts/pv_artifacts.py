@@ -19,8 +19,8 @@ ARTIFACT_FILENAMES = {
 }
 
 HANDOFF_REQUIRED_NEXT_ACTIONS = [
-    "Ask the user to approve the handoff from FIRST_PROMPT.md.",
-    "After approval, read FIRST_PROMPT.md and continue from its execution contract.",
+    "Ask the user to review and approve FIRST_PROMPT.md. Explain that after approval, the next steps are: /clear → inject FIRST_PROMPT.md as execution contract.",
+    "After approval, ask the user to run /clear to reset context, then read and inject FIRST_PROMPT.md.",
     "Treat document generation as preparation only; do not end the Pre-Vibe run after writing files.",
 ]
 
@@ -85,7 +85,7 @@ def handoff_contract(written: dict[str, str]) -> dict[str, Any]:
     return {
         "workflow_state": AWAITING_APPROVAL,
         "handoff_file": written["prompt"],
-        "approval_request": "Please review the generated starting documents. Approve the FIRST_PROMPT.md handoff so Claude Code can continue from it.",
+        "approval_request": "Please review FIRST_PROMPT.md. Approve if it meets your expectations. After approval, the next step will be /clear (reset context) then inject FIRST_PROMPT.md as the execution contract for Claude Code.",
         "required_next_actions": HANDOFF_REQUIRED_NEXT_ACTIONS,
         "document_generation_is_complete": True,
         "pre_vibe_run_is_complete": False,

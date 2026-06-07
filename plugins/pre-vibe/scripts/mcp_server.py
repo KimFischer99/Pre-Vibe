@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import json
-import select
 import sys
 from pathlib import Path
 from typing import Any
@@ -22,12 +21,10 @@ from pre_vibe import (
 )
 
 
-_CLIENT_REQUEST_ID = 10_000
-
 SERVER_INSTRUCTIONS = (
     "Pre-Vibe prepares project starting context before implementation. "
     "Show only short user-facing status text in chat; keep structured workflow fields in structuredContent. "
-    "Use native MCP elicitation for blocking questions instead of printing them as ordinary chat. "
+    "When structuredContent.question_request is present, Claude Code opens native question UI automatically. "
     "Write PRE_VIBE_SPEC.md, CLAUDE.md or PROJECT_CLAUDE.md, and FIRST_PROMPT.md; architect effort may also write PROJECT_INDEX.md. "
     "Do not write internal intake/status/context fields to disk, and keep output paths inside the active project. "
     "Writing documents is not the end of the workflow: after write_project_starting_documents, request user approval for FIRST_PROMPT.md, then read and inject FIRST_PROMPT.md as the execution contract when approved."
@@ -101,6 +98,21 @@ def tool_schema() -> list[dict[str, Any]]:
             },
         },
         {
+            "name": "set_effort_level",
+            "description": "Set Pre-Vibe effort level for this session. Choose the level that fits your task.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "level": {
+                        "type": "string",
+                        "enum": ["mini", "default", "architect"],
+                        "description": "mini → quick tasks: up to 3 questions, minimal preparation. default → normal coding/research: up to 5 questions, balanced depth. architect → complex projects/refactors: up to 10 questions, includes PROJECT_INDEX.md."
+                    },
+                },
+                "required": ["level"],
+            },
+        },
+        {
             "name": "update_pre_vibe_settings",
             "description": "Update project-local Pre-Vibe settings. Use this when the user wants to set default effort behavior.",
             "inputSchema": {
@@ -133,22 +145,6 @@ def tool_schema() -> list[dict[str, Any]]:
             },
         },
         {
-            "name": "open_question_dialog",
-            "description": "Open Claude Code native MCP elicitation for blocking questions returned by prepare_project_start. Use this instead of printing questions in chat.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "message": {"type": "string", "default": "Please answer the key questions so Claude Code can continue."},
-                    "requestedSchema": {"type": "object"},
-                    "questions": {
-                        "type": "array",
-                        "items": {"type": "object"},
-                    },
-                    "timeout_seconds": {"type": "integer", "default": 900},
-                },
-            },
-        },
-        {
             "name": "scan_project_safe",
             "description": "Perform an allowlist project scan without reading secrets.",
             "inputSchema": {
@@ -170,7 +166,7 @@ def tool_schema() -> list[dict[str, Any]]:
         },
         {
             "name": "inspect_codex_environment",
-            "description": "Inspect Claude Code AGENTS, installed standalone skills, plugin cache, enabled plugins, and personal marketplace state.",
+            "description": "Inspect Claude Code guidance files, installed standalone skills, plugin cache, enabled plugins, and personal marketplace state.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -209,79 +205,6 @@ def tool_schema() -> list[dict[str, Any]]:
     ]
 
 
-def schema_from_questions(questions: list[dict[str, Any]]) -> dict[str, Any]:
-    properties: dict[str, Any] = {}
-    required: list[str] = []
-    for index, question in enumerate(questions):
-        qid = str(question.get("id") or f"question_{index + 1}")
-        required.append(qid)
-        properties[qid] = {
-            "type": "string",
-            "title": str(question.get("header") or qid)[:36],
-            "description": str(question.get("question") or "Please answer this question."),
-        }
-    return {"type": "object", "properties": properties, "required": required}
-
-
-def next_client_request_id() -> int:
-    global _CLIENT_REQUEST_ID
-    _CLIENT_REQUEST_ID += 1
-    return _CLIENT_REQUEST_ID
-
-
-def request_client_elicitation(arguments: dict[str, Any]) -> dict[str, Any]:
-    requested_schema = arguments.get("requestedSchema")
-    if not requested_schema and isinstance(arguments.get("questions"), list):
-        requested_schema = schema_from_questions(arguments["questions"])
-    if not isinstance(requested_schema, dict):
-        raise ValueError("open_question_dialog requires requestedSchema or questions")
-    request_id = next_client_request_id()
-    request = {
-        "jsonrpc": "2.0",
-        "id": request_id,
-        "method": "elicitation/create",
-        "params": {
-            "message": arguments.get("message") or "Please answer the key questions so Claude Code can continue.",
-            "requestedSchema": requested_schema,
-        },
-    }
-    sys.stdout.write(json.dumps(request, ensure_ascii=False) + "\n")
-    sys.stdout.flush()
-    timeout = int(arguments.get("timeout_seconds") or 900)
-    while True:
-        readable, _, _ = select.select([sys.stdin], [], [], max(timeout, 1))
-        if not readable:
-            return {
-                "available": False,
-                "reason": "Timed out waiting for Claude Code native question UI.",
-            }
-        line = sys.stdin.readline()
-        if not line:
-            return {
-                "available": False,
-                "reason": "Claude Code closed the MCP stream before returning a question UI response.",
-            }
-        try:
-            response = json.loads(line)
-        except json.JSONDecodeError:
-            return {
-                "available": False,
-                "reason": "Claude Code returned malformed JSON while opening the native question UI.",
-            }
-        if response.get("id") != request_id:
-            continue
-        if "error" in response:
-            return {
-                "available": False,
-                "reason": "Claude Code rejected the native question UI request.",
-                "error": response["error"],
-            }
-        return {
-            "available": True,
-            "response": response.get("result"),
-        }
-
-
 def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     if name == "prepare_project_start":
         payload = prepare_project_start(
@@ -311,14 +234,12 @@ def call_tool(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
             arguments["intensity"],
         )
         return text_result(payload, "Pre-Vibe 强度档位已设置。")
-    if name == "open_question_dialog":
-        payload = request_client_elicitation(arguments)
-        public_text = (
-            "关键问题已确认，正在构建项目初始文档。"
-            if payload.get("available")
-            else "当前 Claude Code 界面未能打开原生提问窗口。"
+    if name == "set_effort_level":
+        payload = set_pre_vibe_intensity(
+            Path("."),
+            arguments["level"],
         )
-        return text_result(payload, public_text)
+        return text_result(payload, f"Effort level set to: {arguments['level']}.")
     if name == "scan_project_safe":
         intensity = arguments.get("intensity", "default")
         max_files = INTENSITY_PROFILES[intensity].max_scanned_files

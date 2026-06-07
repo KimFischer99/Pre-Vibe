@@ -815,7 +815,7 @@ class PreVibeWorkflowTests(unittest.TestCase):
         self.assertEqual(result["written"]["prompt"], "FIRST_PROMPT.md")
         self.assertEqual(result["handoff"]["workflow_state"], AWAITING_APPROVAL)
         self.assertFalse(result["handoff"]["pre_vibe_run_is_complete"])
-        self.assertIn("Ask the user to approve", result["handoff"]["required_next_actions"][0])
+        self.assertIn("review and approve", result["handoff"]["required_next_actions"][0])
 
     def test_default_effort_rejects_project_index(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

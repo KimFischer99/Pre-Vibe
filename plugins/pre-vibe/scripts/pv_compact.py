@@ -74,10 +74,9 @@ def compact_decision(decision: IntakeDecision) -> dict[str, Any]:
     workflow_contract = {
         "required_order": [
             "prepare_project_start",
-            "open_question_dialog when question_request is present",
-            "write_project_starting_documents after required answers and evidence are available",
-            "request user approval for FIRST_PROMPT.md handoff",
-            "after approval, read and inject FIRST_PROMPT.md as the execution contract",
+            "write_project_starting_documents",
+            "request user approval for FIRST_PROMPT.md handoff (review → /clear → inject)",
+            "after approval, ask user to run /clear, then read and inject FIRST_PROMPT.md",
         ],
         "document_generation_is_not_completion": True,
         "completion_condition": "Pre-Vibe is complete only after the FIRST_PROMPT.md handoff is approved and used, or the user explicitly cancels.",
