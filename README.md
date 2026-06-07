@@ -14,7 +14,7 @@ Pre-Vibe turns a rough first request into **three structured documents** before 
 Tell Claude Code:
 
 ```
-请帮我安装这个 plugin：https://github.com/KimFischer99/CC-Pre-Vibe
+Please help me install the plugin：https://github.com/KimFischer99/CC-Pre-Vibe
 ```
 
 Or install manually in three steps:
