@@ -14,23 +14,21 @@ Pre-Vibe turns a rough first request into **three structured documents** before 
 Tell Claude Code:
 
 ```
-Please help me install the plugin：https://github.com/KimFischer99/CC-Pre-Vibe
+请帮我安装这个 plugin：git clone https://github.com/KimFischer99/CC-Pre-Vibe.git ~/.claude/plugins/marketplaces/pre-vibe && claude plugin install pre-vibe@pre-vibe
 ```
 
-Or install manually in three steps:
+Or run manually:
 
 ```bash
-# Step 1: Register the marketplace (do this once)
-claude plugin marketplace add https://raw.githubusercontent.com/KimFischer99/CC-Pre-Vibe/main/.claude-plugin/marketplace.json
+# Step 1: Clone the repo as a directory marketplace (do this once)
+git clone https://github.com/KimFischer99/CC-Pre-Vibe.git ~/.claude/plugins/marketplaces/pre-vibe
 
-# Step 2: Enable auto-update for this marketplace
-claude plugin marketplace auto-update --enable pre-vibe
-
-# Step 3: Install the plugin
+# Step 2: Install the plugin
 claude plugin install pre-vibe@pre-vibe
-```
 
-> **Note:** This plugin uses a **self-hosted marketplace** (not the default Claude Code marketplace). You must complete Step 1 before Step 3. If `claude plugin install pre-vibe` fails with "not found", run Steps 1–3 in order.
+# Step 3 (optional): Update later with
+cd ~/.claude/plugins/marketplaces/pre-vibe && git pull
+```
 
 After installation, restart Claude Code, type `/pre-vibe`, and tell it your rough idea.
 

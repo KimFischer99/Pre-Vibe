@@ -33,19 +33,24 @@ The `/clear` and prompt injection are performed **by Claude Code**, not by the u
 
 If the user rejects the handoff, stop and ask what should change. The Pre-Vibe run is complete only after explicit user approval, `/clear` is executed, and `FIRST_PROMPT.md` has been injected as the execution contract — or when the user explicitly cancels.
 
-## Document Contract
+## Document Contract — Strict Content Boundaries
 
-- `PRE_VIBE_SPEC.md`: Engineering-focused project handbook. Must contain: env vars, stack/language, installed plugins & skills, project component inventory, git state, past session context, file structure pointers, and actionable integration suggestions. Minimize generic background information — focus on what matters for implementation.
-- `CLAUDE.md`: created only when the project has no root `CLAUDE.md`.
-- `PROJECT_CLAUDE.md`: proposal when a root `CLAUDE.md` already exists.
-- `FIRST_PROMPT.md`: rewritten fully on each Pre-Vibe handoff as the execution contract.
-- `PROJECT_INDEX.md`: architect effort only; indexes project intent, resources, tools, files, environment, and purpose for Claude Code.
+The three documents must have **zero content overlap**. Each file owns its domain exclusively:
+
+| Document | EXCLUSIVE content (only here) | FORBIDDEN content (belongs elsewhere) |
+|---|---|---|
+| `PRE_VIBE_SPEC.md` | env vars list, language/framework stack, installed plugins & skills with suggested usage, project component inventory, git state, file structure summary, actionable integration suggestions | execution rules (→ CLAUDE.md), contract terms (→ FIRST_PROMPT.md), generic tech introductions, Wikipedia-style background |
+| `CLAUDE.md` or `PROJECT_CLAUDE.md` | execution rules, file pointers, operation boundaries, acceptance criteria, global CLAUDE.md compatibility statement | env vars, plugins/skills list (→ SPEC), delivery contract terms (→ FIRST_PROMPT.md) |
+| `FIRST_PROMPT.md` | Completion Contract, stop/ask conditions, verification gates, deliverable definition | env vars, component inventory (→ SPEC), execution rules (→ CLAUDE.md) |
+| `PROJECT_INDEX.md` | architect effort only; indexes project intent, resources, tools, files, environment, purpose | |
+
+**Think of these as three separate documents for three different audiences**: SPEC = project reality (what we have), CLAUDE.md = agent rules (how we work), FIRST_PROMPT.md = delivery contract (what we ship). Never duplicate content across them.
 
 ## Evidence & Context Rules
 
 - **Local-first**: env vars, git state, project files, installed plugins, installed skills, past session context, and project structure are the primary evidence sources. Use these before any external reference.
+- **SPEC must inventory plugins & skills explicitly**: list each installed plugin/skill by name with a one-line suggested use. This is the most important section — it tells Claude Code what tools are available and when to use them.
 - **Online references**: treat as secondary evidence only when directly relevant to implementation decisions (e.g., API docs, version-specific syntax). Do not include general background articles or Wikipedia-style introductions in SPEC.
-- **SPEC suggestions**: every suggestion in PRE_VIBE_SPEC.md must be actionable and tied to a concrete engineering decision. Prefer "Use the installed X plugin for Y" over "X is a popular tool for Y."
 
 ## Intensity
 

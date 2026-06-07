@@ -14,23 +14,21 @@ Pre-Vibe 把你的粗略需求整理成 **三份结构化文档**，让 Claude C
 在 Claude Code 中直接说：
 
 ```
-请帮我安装这个 plugin：https://github.com/KimFischer99/CC-Pre-Vibe
+请帮我安装这个 plugin：git clone https://github.com/KimFischer99/CC-Pre-Vibe.git ~/.claude/plugins/marketplaces/pre-vibe && claude plugin install pre-vibe@pre-vibe
 ```
 
-或手动三步安装（注意不是官方 marketplace，是自建市场）：
+或手动两步安装：
 
 ```bash
-# 第一步：注册市场（只需执行一次）
-claude plugin marketplace add https://raw.githubusercontent.com/KimFischer99/CC-Pre-Vibe/main/.claude-plugin/marketplace.json
+# 第一步：克隆仓库作为目录 marketplace（只需一次）
+git clone https://github.com/KimFischer99/CC-Pre-Vibe.git ~/.claude/plugins/marketplaces/pre-vibe
 
-# 第二步：开启该市场的自动更新
-claude plugin marketplace auto-update --enable pre-vibe
-
-# 第三步：安装插件
+# 第二步：安装插件
 claude plugin install pre-vibe@pre-vibe
-```
 
-> **注意：** 本插件使用**自建 marketplace**，不是 Claude Code 默认官方市场。直接执行 `claude plugin install pre-vibe` 会报"not found"，必须按顺序完成第一步注册市场、第二步开启更新、第三步安装。
+# 第三步（可选）：以后更新用
+cd ~/.claude/plugins/marketplaces/pre-vibe && git pull
+```
 
 安装完成后重启 Claude Code，输入 `/pre-vibe`，然后描述你的任务即可。
 
