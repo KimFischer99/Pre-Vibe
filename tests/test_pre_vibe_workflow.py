@@ -17,7 +17,6 @@ from pv_routing import (  # noqa: E402
     assess_risk,
     assess_uncertainty,
     blocking_questions_for,
-    can_compile_artifacts,
     choose_intensity,
     choose_language,
     classify_scenario,
@@ -699,10 +698,10 @@ class RouteIntakeTests(unittest.TestCase):
             decision = route_intake("hello", tmp, scan=False, intensity="mini")
             self.assertEqual(decision.scenario, "general")
 
-    def test_route_intake_can_compile(self) -> None:
+    def test_route_intake_always_has_questions(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             decision = route_intake("fix a bug", tmp, scan=True, intensity="mini")
-            self.assertTrue(can_compile_artifacts(decision))
+            self.assertGreater(len(decision.blocking_questions), 0)
 
 
 # ══════════════════════════════════════════════════════════════════════════

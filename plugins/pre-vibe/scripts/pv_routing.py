@@ -102,6 +102,11 @@ def looks_like_new_product_task(task: str) -> bool:
             "网站",
             "应用",
             "小程序",
+            "营造",
+            "构建",
+            "页面",
+            "在线",
+            "实现",
         )
     )
 
@@ -365,6 +370,20 @@ def blocking_questions_for(task: str, scenario: str, intensity: str, language: s
                 "Deployment changes risk profile: live deploys affect real environments, while plan-only keeps work safely contained.",
                 ["只准备方案，本地验证", "允许真实部署到线上", "每个部署操作前询问"] if zh else ["Plan only — local verification", "Live deploy to production allowed", "Ask before each deploy action"],
                 "只准备方案，本地验证" if zh else "Plan only — local verification",
+            )
+        )
+    # Fallback: ensure at least one baseline question is always asked.
+    # The user cannot generate meaningful documents without answering what they want.
+    if not questions:
+        questions.append(
+            BlockingQuestion(
+                "baseline_scope",
+                "任务范围" if zh else "Scope",
+                "请用一两句话描述你想做什么：最终产出是什么、给谁用、最核心的功能是什么？" if zh else "In one or two sentences: what do you want to build, who is it for, and what is the single most important feature?",
+                "Without at least a basic scope, SPEC/CLAUDE/FIRST_PROMPT cannot be written with any useful precision.",
+                ["先说核心目标和用户", "已有详细 PRD，从文档推断", "只是探索，不给具体目标"] if zh else ["Describe core goal and audience", "Already have a detailed PRD — infer from docs", "Just exploring — no concrete goal yet"],
+                "先说核心目标和用户" if zh else "Describe core goal and audience",
+                requires_native_ui=True,
             )
         )
     return questions[: profile.max_questions]
