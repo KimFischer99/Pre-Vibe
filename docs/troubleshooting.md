@@ -17,6 +17,16 @@ python3 -m py_compile plugins/pre-vibe/scripts/*.py
 
 If `python3` is missing, install Python 3 or use WSL on Windows.
 
+## Tools Use The Wrong Project Root
+
+Plugin MCP tools use `CLAUDE_PROJECT_DIR` as the default project root. Claude Code sets this variable to the active project directory when it starts the plugin server.
+
+If Pre-Vibe scans or writes in the wrong place:
+
+1. Start Claude Code from the intended project root.
+2. Restart the session or run `/reload-plugins`.
+3. Pass an explicit `project` or `project_root` argument when testing MCP tools directly.
+
 ## Native Question UI Does Not Open
 
 Pre-Vibe should pause instead of printing backend fields. Restart the session, enable the plugin again, and retry. If the UI still fails, reduce the task to a smaller first prompt or run without Pre-Vibe for that session.

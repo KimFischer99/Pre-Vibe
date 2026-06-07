@@ -11,32 +11,12 @@ Pre-Vibe turns a rough first request into **three structured documents** before 
 
 ## Quick Install
 
-Tell Claude Code:
-
-```
-Please add the Pre-Vibe marketplace to my Claude Code settings so I can install the plugin: github:KimFischer99/CC-Pre-Vibe
-```
-
-Or add manually to `~/.claude/settings.json`:
-
-```json
-"extraKnownMarketplaces": {
-  "pre-vibe": {
-    "source": {
-      "source": "github",
-      "repo": "KimFischer99/CC-Pre-Vibe"
-    }
-  }
-}
-```
-
-Then install:
-
 ```bash
+claude plugin marketplace add KimFischer99/CC-Pre-Vibe
 claude plugin install pre-vibe@pre-vibe
 ```
 
-Claude Code handles cloning, caching, and updating automatically with the GitHub source type. No manual `git clone` or `git pull` needed.
+Claude Code handles cloning, caching, and updating automatically. No manual `git clone`, `git pull`, or settings JSON edit is needed.
 
 After installation, restart Claude Code, type `/pre-vibe`, and tell it your rough idea.
 
@@ -90,6 +70,8 @@ Adjust anytime through the plugin settings, or use the `set_effort_level` tool.
 5. Writes customized starting documents focused on engineering execution
 6. Presents FIRST_PROMPT.md for user audit — after explicit approval, `/clear` and inject
 
+Pre-Vibe MCP tools resolve project-relative defaults through `CLAUDE_PROJECT_DIR`, which Claude Code sets to the active project root. Explicit `project` or `project_root` tool arguments still take precedence.
+
 ---
 
 ## Architecture
@@ -108,6 +90,8 @@ plugins/pre-vibe/
 ```
 
 The Python layer handles deterministic routing, scanning, validation, and safe writing. Claude Code authors the final task-specific Markdown using MCP tool results and structured workflow data.
+
+`scripts/pre_vibe.py` is a developer-facing CLI and compatibility facade. It keeps the older import surface stable for the MCP server and can inspect routing locally, for example: `python3 plugins/pre-vibe/scripts/pre_vibe.py --task "fix login" --project . --no-scan`.
 
 ---
 

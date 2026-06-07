@@ -25,3 +25,5 @@ python3 -m unittest discover -s tests
 2. Keep `plugin.json`, MCP server info, and README badges on the same public version.
 3. Run validation and tests.
 4. Test locally with `claude --plugin-dir ./plugins/pre-vibe` and sanity-check startup behavior.
+5. Create and push the plugin release tag with `claude plugin tag plugins/pre-vibe --push`.
+6. Create a GitHub Release from that tag and copy the changelog entry into the release notes.

@@ -22,6 +22,16 @@ Tool results use short user-visible status text such as "正在构建项目初�
 
 `write_project_starting_documents` is not the final workflow step. After it writes files, Claude Code must request user approval for `FIRST_PROMPT.md`; after approval, Claude Code must read and inject `FIRST_PROMPT.md` as the execution contract.
 
+## Developer CLI
+
+`scripts/pre_vibe.py` is not the normal user entrypoint. It is a compatibility facade for the MCP server imports and a small local CLI for inspecting routing decisions during development:
+
+```bash
+python3 plugins/pre-vibe/scripts/pre_vibe.py --task "fix login" --project . --no-scan
+```
+
+Use `/pre-vibe` in Claude Code for the real plugin workflow.
+
 ## Documents Written
 
 - `PRE_VIBE_SPEC.md`

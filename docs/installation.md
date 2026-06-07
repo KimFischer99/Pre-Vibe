@@ -5,8 +5,11 @@ Pre-Vibe is distributed as a Claude Code plugin package from this repository.
 ## From This Marketplace
 
 ```bash
+claude plugin marketplace add KimFischer99/CC-Pre-Vibe
 claude plugin install pre-vibe@pre-vibe
 ```
+
+If the marketplace is already configured, run only the install command.
 
 ## Local Development Install
 

@@ -7,6 +7,7 @@
 - Kept MCP helper responses structured even when no public status text is provided.
 - Updated repository metadata and public version strings for `KimFischer99/CC-Pre-Vibe`.
 - Added strict Claude Code plugin validation to CI and development docs.
+- Simplified install docs and documented the developer CLI plus `CLAUDE_PROJECT_DIR` behavior.
 
 ## v0.1.2 - 2026-06-07
 
